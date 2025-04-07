@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout}">
+
+<body>
+  <div th:fragment="content" class="container my-4">
+    <h1 class="text-center mb-4">To-Doリスト</h1>
+
+    <!-- To-Do 追加フォーム -->
+    <form th:action="@{/todos/add}" method="post" class="input-group mb-4">
+      <input type="text" name="task" class="form-control" placeholder="タスクを入力" required />
+      <button type="submit" class="btn btn-primary">追加</button>
+    </form>
+
+    <!-- 未完了のタスク -->
+    <h3 class="mb-3">未完了のタスク</h3>
+    <ul class="list-group mb-4" id="incompleteTasksList">
+      <li th:each="todo : ${todos}" th:if="${!todo.completed}" th:id="'todo-' + ${todo.id}"
+        class="list-group-item d-flex justify-content-between align-items-center">
+
+        <label class="custom-checkbox">
+          <input type="checkbox" class="real-checkbox" th:attr="data-id=${todo.id}" onchange="toggleCompleted(this)" />
+          <span class="checkmark"></span>
+        </label>
+
+        <span th:text="${todo.task}" class="fs-5 task-span"></span>
+
+        <div class="d-flex gap-2">
+          <div class="d-flex gap-2">
+            <!-- 編集ボタン -->
+            <button type="button" class="btn btn-outline-primary btn-sm"
+              th:attr="data-id=${todo.id}, data-task=${todo.task}" onclick="openEditModalFromButton(this)">
+              編集
+            </button>
+
+            <!-- 削除ボタン -->
+            <button type="button" class="btn btn-outline-danger btn-sm" th:attr="data-id=${todo.id}"
+              onclick="showDeleteConfirmModal(this)">
+              削除
+            </button>
+          </div>
+        </div>
+      </li>
+    </ul>
+
+    <!-- 以下、完了済みエリア -->
+    <button id="toggleCompletedTasksBtn" class="btn btn-secondary mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#completedTasks"
+      aria-expanded="false" aria-controls="completedTasks">
+      完了済みのタスクを表示
+    </button>
+
+    <div class="collapse" id="completedTasks">
+      <h3 class="mb-3">完了済みのタスク</h3>
+      <ul class="list-group" id="completedTasksList">
+        <li th:each="todo : ${todos}" th:if="${todo.completed}"
+          class="list-group-item d-flex justify-content-between align-items-center">
+          
+          <label class="custom-checkbox">
+            <input type="checkbox" class="real-checkbox" th:attr="data-id=${todo.id}" onchange="toggleCompleted(this)" checked />
+            <span class="checkmark"></span>
+          </label>
+
+          <span th:text="${todo.task}" class="fs-5 task-span"></span>
+
+          <div class="d-flex gap-2">
+            <!-- 編集ボタン -->
+            <button type="button" class="btn btn-outline-primary btn-sm"
+              th:attr="data-id=${todo.id}, data-task=${todo.task}" onclick="openEditModalFromButton(this)">
+              編集
+            </button>
+
+            <!-- 削除ボタン -->
+            <button type="button" class="btn btn-outline-danger btn-sm" th:attr="data-id=${todo.id}"
+              onclick="showDeleteConfirmModal(this)">
+              削除
+            </button>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 編集モーダル -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">タスクの編集</h5>
+            <button class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="text" class="form-control" id="editTaskInput" />
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">
+              キャンセル
+            </button>
+            <button class="btn btn-primary" id="saveEditBtn">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 削除確認モーダル -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">削除の確認</h5>
+            <button class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p id="deleteConfirmText">本当に削除しますか？</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">
+              キャンセル
+            </button>
+            <button class="btn btn-danger" id="confirmDeleteBtn">
+              削除する
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script th:src="@{/js/task-api.js}"></script>
+  </div>
+</body>
+
+</html>

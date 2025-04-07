@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout}">
+
+<body>
+    <div th:fragment="content">
+        <div class="row">
+            <h4 class="top-title mt-2 mx-auto">タスク管理を簡単に行いましょう</h4>
+        </div>
+
+        <!-- アクセスしやすいボタン -->
+        <div class="text-center mb-4">
+            <a href="/todos" class="btn btn-success btn-lg px-5 shadow">
+                👉 To-Doリストを今すぐ使う
+            </a>
+        </div>
+
+        <section class="d-flex justify-content-center my-4">
+            <div class="card p-4 shadow-sm" style="max-width: 900px; background-color: #fffaf5;">
+                <h2 class="mb-3 text-center" style="color: #a0522d;">To-Doリスト アプリの画面イメージ</h2>
+                <img src="/img/image.png" alt="To-Doリスト アプリの画面イメージ" class="img-fluid rounded shadow mb-3"
+                    style="max-width: 100%; height: auto;">
+                <p class="text-muted text-center">未完了・完了のタスクを管理できるシンプルなアプリです。</p>
+            </div>
+        </section>
+
+        <!-- 登録案内を目立たせる -->
+        <div class="alert alert-warning text-center mt-4">
+            ユーザー登録をして、タスクを管理しましょう！
+            <a href="/register" class="btn btn-outline-primary btn-sm ms-3">新規登録</a>
+        </div>
+    </div>
+</body>
+
+</html>

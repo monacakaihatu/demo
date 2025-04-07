@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout}">
+<body>
+<div th:fragment="content">
+    <h2 class="text-center">Register</h2>
+
+    <form th:action="@{/register}" method="post" class="w-50 mx-auto">
+        <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-success w-100">Register</button>
+    </form>
+</div>
+</body>
+</html>

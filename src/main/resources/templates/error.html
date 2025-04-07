@@ -1,0 +1,26 @@
+<!-- error.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>エラーが発生しました</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <h1>エラーが発生しました</h1>
+
+    <p>申し訳ありません。問題が発生しました。</p>
+
+    <div style="color: red;">
+        <p><strong>ステータスコード:</strong> <span th:text="${status}">500</span></p>
+        <p><strong>エラー:</strong> <span th:text="${error}">Internal Server Error</span></p>
+        <p><strong>詳細メッセージ:</strong> <span th:text="${message}">Unexpected error</span></p>
+        <p><strong>パス:</strong> <span th:text="${path}">/some-path</span></p>
+        <p><strong>例外:</strong> <span th:text="${exception}">N/A</span></p>
+        <p><strong>トレース:</strong></p>
+        <pre th:text="${trace}">No trace</pre>
+    </div>
+
+    <p><a th:href="@{/}">トップに戻る</a></p>
+</body>
+</html>
