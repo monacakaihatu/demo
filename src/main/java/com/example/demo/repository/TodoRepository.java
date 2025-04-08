@@ -9,4 +9,7 @@ import com.example.demo.model.User;
 
 public interface TodoRepository extends JpaRepository<Todo, Long> {
     List<Todo> findByUser(User user);
+    List<Todo> findByUserAndTaskGroupId(User user, Long groupId);
+    List<Todo> findByUserAndTaskGroupIdAndCompleted(User user, Long groupId, boolean completed);
+    List<Todo> findByUserAndCompleted(User user, Boolean completed);
 }

@@ -1,5 +1,8 @@
 package com.example.demo.model;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.*;
@@ -22,7 +25,14 @@ public class Todo {
     private boolean completed;
 
     @ManyToOne
-    @JoinColumn(name = "user_id")  // 外部キー
+    @JoinColumn(name = "user_id")
     @JsonBackReference
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_id")
+    private TaskGroup taskGroup;
+    
+    private LocalDateTime createdAt = LocalDateTime.now(ZoneId.of("Asia/Tokyo"));
+    private LocalDateTime updatedAt = LocalDateTime.now(ZoneId.of("Asia/Tokyo"));
 }

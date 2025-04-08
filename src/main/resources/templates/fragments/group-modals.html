@@ -1,0 +1,38 @@
+<div th:fragment="groupModals">
+    <!-- グループ編集モーダル -->
+    <div class="modal fade" id="editGroupModal" tabindex="-1" aria-labelledby="editGroupModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editGroupModalLabel">グループを編集</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="editGroupNameInput" class="form-control" placeholder="グループ名を入力" />
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button class="btn btn-danger" id="deleteGroupBtn">グループ削除</button>
+                    <button class="btn btn-primary" id="saveGroupChangesBtn">変更を保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- グループ削除確認モーダル -->
+    <div class="modal fade" id="confirmGroupDeleteModal" tabindex="-1" aria-labelledby="confirmGroupDeleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">削除確認</h5>
+                </div>
+                <div class="modal-body">
+                    このグループと紐づくタスクがすべて削除されます。本当によろしいですか？
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button class="btn btn-danger" id="confirmDeleteGroupBtn">削除する</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

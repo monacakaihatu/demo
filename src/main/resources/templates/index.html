@@ -4,11 +4,15 @@
 <body>
     <div th:fragment="content">
         <div class="row">
-            <h4 class="top-title mt-2 mx-auto">タスク管理を簡単に行いましょう</h4>
+            <h4 class="top-title mt-2 mx-auto d-md-block d-none"><i class="fa-solid fa-grip-lines"></i>　タスク管理を簡単に行いましょう　<i class="fa-solid fa-grip-lines"></i></h4>
+            <h5 class="top-title mt-2 mx-auto d-md-none d-block d-flex">
+                <div class="col-2 p-4 d-flex align-items-center"><i class="fa-solid fa-grip-lines"></i></div>
+                <div class="col-8">　タスク管理を<br>簡単に行いましょう　</div>
+                <div class="col-2 p-4 d-flex align-items-center"><i class="fa-solid fa-grip-lines"></i></div>
+            </h5>
         </div>
 
-        <!-- アクセスしやすいボタン -->
-        <div class="text-center mb-4">
+        <div class="text-center my-4">
             <a href="/todos" class="btn btn-success btn-lg px-5 shadow">
                 👉 To-Doリストを今すぐ使う
             </a>

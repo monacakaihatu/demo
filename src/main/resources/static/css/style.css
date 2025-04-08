@@ -174,26 +174,24 @@
     padding: 0 65px;
     text-align: center;
   }
-  
-  .top-title:before,
-  .top-title:after {
-    position: absolute;
-    top: calc(50% - 3px);
-    width: 50px;
-    height: 6px;
-    content: '';
-    border-top: solid 2px var(--primary-color);
-    border-bottom: solid 2px var(--primary-color);
-  }
-  
-  .top-title:before {
-    left: 25%;
-  }
-  
-  .top-title:after {
-    right: 25%;
-  }
 
   .border-primary {
     border-color: var(--primary-color) !important;
+  }
+
+  .task-span {
+    max-width: 100%;
+    word-break: break-word;
+  }
+
+  .custom-checkbox input[type="checkbox"] {
+    margin-right: 6px;
+  }
+
+  #newGroupInputContainer {
+    transition: all 0.3s ease;
+  }
+
+  .custom-navbar {
+    background-color: #a35b00; /* こげ茶風オリジナル */
   }
