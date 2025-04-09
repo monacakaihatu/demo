@@ -18,7 +18,6 @@ import com.example.demo.repository.TodoRepository;
 import com.example.demo.repository.TaskGroupRepository;
 import com.example.demo.service.TodoService;
 import com.example.demo.model.dto.TodoDto;
-import com.example.demo.model.dto.GroupsDto;
 
 @Controller
 @RequestMapping("/todos")
@@ -66,17 +65,6 @@ public class TodoController {
         model.addAttribute("count", count);
 
         return "todo-list";
-    }
-
-    @GetMapping("/groups")
-    @ResponseBody
-    public List<GroupsDto> getGroups() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
-
-        List<TaskGroup> groups = taskGroupRepository.findByUser(user);
-        return groups.stream().map(GroupsDto::new).toList();
     }
 
     @PatchMapping("/{id}/toggle")

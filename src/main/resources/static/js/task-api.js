@@ -223,7 +223,7 @@ document.getElementById("groupSortDropdown").addEventListener("click", function 
     const groupSortList = document.getElementById("groupSortList");
     groupSortList.innerHTML = ''; // 一旦クリア
 
-    fetch("/todos/groups")
+    fetch("/todos/groups/list")
         .then(response => response.json())
         .then(groups => {
             // 「全て」ボタン
@@ -265,6 +265,8 @@ document.getElementById("groupSortDropdown").addEventListener("click", function 
             });
         });
 });
+
+document.getElementById('taskGroupSelect').addEventListener('focus', fetchAndUpdateGroupOptions);
 
 // タスクのDOM要素を生成する関数
 function createTaskElement(todo) {
@@ -325,4 +327,30 @@ function createTaskElement(todo) {
     li.appendChild(rightDiv);
 
     return li;
+}
+
+function fetchAndUpdateGroupOptions() {
+    fetch('/todos/groups/list') // ← JSONでグループ一覧返すエンドポイント
+        .then(response => response.json())
+        .then(groups => {
+            const select = document.getElementById('taskGroupSelect');
+
+            // 最初の2つ（--グループを選択--, 新しいグループを作成）は残す
+            const baseOptions = `
+          <option value="">-- グループを選択 --</option>
+          <option value="__new__">新しいグループを作成</option>
+        `;
+            select.innerHTML = baseOptions;
+
+            // 取得したグループを追加
+            groups.forEach(group => {
+                const option = document.createElement('option');
+                option.value = group.id;
+                option.textContent = group.name;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('グループ取得エラー:', error);
+        });
 }
