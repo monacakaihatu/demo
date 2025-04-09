@@ -42,6 +42,8 @@ document.getElementById("confirmDeleteGroupBtn").addEventListener("click", () =>
             bootstrap.Modal.getInstance(document.getElementById("confirmGroupDeleteModal")).hide();
             sortByGroup(""); // 全表示に戻す
             localStorage.removeItem("sortedGroupId");
+            document.querySelector('#groupSortDropdown').textContent = '全て';
+            localStorage.setItem('sortedGroupId', ''); // ソート状態をリセット
 
             // 未完了タスク件数を更新
             const count = document.querySelectorAll('#incompleteTasksList li').length;
