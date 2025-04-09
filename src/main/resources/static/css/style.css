@@ -1,197 +1,220 @@
 /* === カラーパレット（#AA5500ベース） === */
 :root {
-    --primary-color: #AA5500;
-    --primary-hover: #8F4400;
-    --primary-light: #FFDDB3;
-    --secondary-color: #6c757d;
-    --success-color: #28a745;
-    --danger-color: #dc3545;
-    --background-color: #fffaf5;
-    --text-color: #333;
-  }
-  
-  body {
-    background-color: var(--background-color);
-    color: var(--text-color);
-    font-family: 'Segoe UI', sans-serif;
-  }
-  
-  /* === ボタン === */
-  .btn-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-    color: #fff;
-  }
-  
-  .btn-primary:hover {
-    background-color: var(--primary-hover);
-    border-color: var(--primary-hover);
-  }
-  
-  .btn-outline-primary {
-    color: var(--primary-color);
-    border-color: var(--primary-color);
-  }
-  
-  .btn-outline-primary:hover {
-    background-color: var(--primary-light);
-    color: var(--primary-hover);
-  }
-  
-  /* === チェックボックス === */
-  .custom-checkbox {
-    display: inline-block;
-    position: relative;
-    cursor: pointer;
-    width: 20px;
-    height: 20px;
-  }
-  
-  .real-checkbox {
-    opacity: 0;
-    width: 0;
-    height: 0;
-    position: absolute;
-  }
-  
-  .checkmark {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 20px;
-    width: 20px;
-    background-color: #fff;
-    border: 2px solid var(--primary-color);
-    border-radius: 4px;
-    transition: all 0.2s ease;
-  }
-  
-  .real-checkbox:checked + .checkmark {
-    background-color: var(--primary-color);
-  }
-  
-  .checkmark::after {
-    content: "";
-    position: absolute;
-    display: none;
-    left: 6px;
-    top: 2px;
-    width: 5px;
-    height: 10px;
-    border: solid white;
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
-  }
-  
-  .real-checkbox:checked + .checkmark::after {
-    display: block;
-  }
-  
-  /* === カードなど === */
-  .card {
-    border: 1px solid var(--primary-light);
-    background-color: #fff;
-  }
-  
-  /* === フォームコントロール === */
-  .form-control:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(170, 85, 0, 0.25);
-  }
-  
-  /* === 見出し === */
-  h1, h2, h3, h4, h5 {
-    color: var(--primary-color);
-  }
+  --primary-color: #AA5500;
+  --primary-hover: #8F4400;
+  --primary-light: #FFDDB3;
+  --secondary-color: #6c757d;
+  --success-color: #28a745;
+  --danger-color: #dc3545;
+  --background-color: #fffaf5;
+  --text-color: #333;
+}
 
-  /* === navigation === */
-  .custom-navbar {
-    background-color: #aa5500;
-  }
-  
-  .custom-navbar .navbar-brand,
-  .custom-navbar .nav-link,
-  .custom-navbar .navbar-text {
-    color: white;
-  }
-  
-  .custom-navbar .nav-link:hover {
-    color: #ffe0b2; /* 明るめオレンジ */
-  }
-  
+body {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* === ボタン === */
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.btn-outline-primary {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary-light);
+  color: var(--primary-hover);
+}
+
+.btn.btn-primary:active,
+.btn.btn-primary:focus {
+  background-color: var(--primary-light) !important;
+  border-color: var(--primary-light) !important;
+  color: var(--primary-hover) !important;
+  box-shadow: none !important;
+  /* Bootstrapの影も消す */
+}
+
+.btn.btn-outline-primary:active,
+.btn.btn-outline-primary:focus {
+  background-color: var(--primary-light) !important;
+  color: var(--primary-hover) !important;
+  border-color: var(--primary-light) !important;
+  box-shadow: none !important;
+}
+
+/* === チェックボックス === */
+.custom-checkbox {
+  display: inline-block;
+  position: relative;
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+}
+
+.real-checkbox {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 20px;
+  width: 20px;
+  background-color: #fff;
+  border: 2px solid var(--primary-color);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.real-checkbox:checked+.checkmark {
+  background-color: var(--primary-color);
+}
+
+.checkmark::after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.real-checkbox:checked+.checkmark::after {
+  display: block;
+}
+
+/* === カードなど === */
+.card {
+  border: 1px solid var(--primary-light);
+  background-color: #fff;
+}
+
+/* === フォームコントロール === */
+.form-control:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(170, 85, 0, 0.25);
+}
+
+/* === 見出し === */
+h1,
+h2,
+h3,
+h4,
+h5 {
+  color: var(--primary-color);
+}
+
+/* === navigation === */
+.custom-navbar {
+  background-color: #aa5500;
+}
+
+.custom-navbar .navbar-brand,
+.custom-navbar .nav-link,
+.custom-navbar .navbar-text {
+  color: white;
+}
+
+.custom-navbar .nav-link:hover {
+  color: #ffe0b2;
+  /* 明るめオレンジ */
+}
+
 
 .custom-checkbox {
-    display: inline-block;
-    position: relative;
-    cursor: pointer;
-    width: 20px;
-    height: 20px;
-  }
-  
-  .custom-checkbox input[type="checkbox"] {
-    opacity: 0; /* これで元のチェックを非表示 */
-    width: 0;
-    height: 0;
-    position: absolute;
-  }
-  
-  .custom-checkbox .checkmark {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 20px;
-    width: 20px;
-    background-color: #fff;
-    border: 2px solid #AA5500;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-  }
-  
-  .custom-checkbox input[type="checkbox"]:checked + .checkmark {
-    background-color: #AA5500;
-  }
-  
-  .custom-checkbox .checkmark::after {
-    content: "";
-    position: absolute;
-    display: none;
-    left: 6px;
-    top: 2px;
-    width: 5px;
-    height: 10px;
-    border: solid white;
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
-  }
-  
-  .custom-checkbox input[type="checkbox"]:checked + .checkmark::after {
-    display: block;
-  }
-  
-  .top-title {
-    position: relative;
-    display: inline-block;
-    padding: 0 65px;
-    text-align: center;
-  }
+  display: inline-block;
+  position: relative;
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+}
 
-  .border-primary {
-    border-color: var(--primary-color) !important;
-  }
+.custom-checkbox input[type="checkbox"] {
+  opacity: 0;
+  /* これで元のチェックを非表示 */
+  width: 0;
+  height: 0;
+  position: absolute;
+}
 
-  .task-span {
-    max-width: 100%;
-    word-break: break-word;
-  }
+.custom-checkbox .checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 20px;
+  width: 20px;
+  background-color: #fff;
+  border: 2px solid #AA5500;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
 
-  .custom-checkbox input[type="checkbox"] {
-    margin-right: 6px;
-  }
+.custom-checkbox input[type="checkbox"]:checked+.checkmark {
+  background-color: #AA5500;
+}
 
-  #newGroupInputContainer {
-    transition: all 0.3s ease;
-  }
+.custom-checkbox .checkmark::after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
 
-  .custom-navbar {
-    background-color: #a35b00; /* こげ茶風オリジナル */
-  }
+.custom-checkbox input[type="checkbox"]:checked+.checkmark::after {
+  display: block;
+}
+
+.top-title {
+  position: relative;
+  display: inline-block;
+  padding: 0 65px;
+  text-align: center;
+}
+
+.border-primary {
+  border-color: var(--primary-color) !important;
+}
+
+.task-span {
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.custom-checkbox input[type="checkbox"] {
+  margin-right: 6px;
+}
+
+#newGroupInputContainer {
+  transition: all 0.3s ease;
+}
+
+.custom-navbar {
+  background-color: #a35b00;
+}
