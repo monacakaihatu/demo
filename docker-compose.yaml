@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  app:
+    image: eclipse-temurin:21-jdk
+    container_name: spring_app
+    working_dir: /app
+    volumes:
+      - .:/app
+      - ~/.m2:/root/.m2
+    ports:
+      - "8080:8080"
+    command: ./mvnw spring-boot:run
+    depends_on:
+      - db
+      - minio
+      - mailcatcher
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/demo?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_MAIL_HOST: mailcatcher
+      SPRING_MAIL_PORT: 1025
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: demo
+      MYSQL_ROOT_PASSWORD: password
+      TZ: Asia/Tokyo
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+
+  mailcatcher:
+    image: schickling/mailcatcher
+    container_name: mailcatcher
+    ports:
+      - "1080:1080"
+      - "1025:1025"
+
+volumes:
+  mysql_data:
+  minio_data:
