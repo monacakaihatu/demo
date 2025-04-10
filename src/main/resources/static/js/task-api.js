@@ -271,6 +271,8 @@ document.getElementById("groupSortDropdown").addEventListener("click", function 
         });
 });
 
+document.getElementById('taskGroupSelect').addEventListener('focus', fetchAndUpdateGroupOptions);
+
 // タスクのDOM要素を生成する関数
 function createTaskElement(todo) {
     const li = document.createElement("li");
