@@ -11,7 +11,7 @@ function openEditGroupModal(groupId, groupName) {
 document.getElementById("saveGroupChangesBtn").addEventListener("click", () => {
     const newName = document.getElementById("editGroupNameInput").value;
 
-    fetch(`/todos/groups/${editingGroupId}`, {
+    fetchWithAuth(`/todos/groups/${editingGroupId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newName })
@@ -32,7 +32,7 @@ document.getElementById("deleteGroupBtn").addEventListener("click", () => {
 
 // 最終確認 → 削除実行
 document.getElementById("confirmDeleteGroupBtn").addEventListener("click", () => {
-    fetch(`/todos/groups/${editingGroupId}`, {
+    fetchWithAuth(`/todos/groups/${editingGroupId}`, {
         method: "DELETE"
     })
     .then(res => {

@@ -22,6 +22,7 @@ document.getElementById("taskGroupSelect").addEventListener("change", function (
 // タスク追加
 function handleAddTodo(event) {
     event.preventDefault(); // フォームの通常送信を防ぐ
+    clearErrors();
 
     const task = document.querySelector('input[name="task"]').value;
     const addFormGroupId = document.getElementById("taskGroupSelect").value;
@@ -33,16 +34,18 @@ function handleAddTodo(event) {
         newGroupName: addFormGroupId === "__new__" ? newGroupName : null
     };
 
-    fetch("/todos/add-ajax", {
+    fetchWithAuth("/todos/add-ajax", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
     })
         .then(response => {
             if (!response.ok) {
-                return response.text().then(text => { throw new Error(text); });
+                return response.json().then(errorMap => {
+                    showValidationErrors(errorMap);
+                    throw new Error("バリデーションエラー");
+                });
             }
-            return response.json();
         })
         .then(todo => {
             const modal = bootstrap.Modal.getInstance(document.getElementById('addTaskModal'));
@@ -61,7 +64,7 @@ function handleAddTodo(event) {
                 localStorage.setItem('sortedGroupId', todo.groupId);
                 document.getElementById("groupSortDropdown").textContent = todo.groupName;
                 sortByGroup(todo.groupId); // 自動で切り替え表示
-                return; // ↓の追加DOM処理は不要（sortByGroupがやってくれる）
+                return;
             }
 
             // 表示中のグループと一致しない場合はDOMに追加しない
@@ -75,7 +78,9 @@ function handleAddTodo(event) {
 
             updateIncompleteCount(); // 件数カウントを更新
         })
-        .catch(error => console.error("エラー:", error));
+        .catch(error => {
+            console.error("エラー:", error);
+        });
 }
 
 // タスク削除
@@ -93,7 +98,7 @@ function showDeleteConfirmModal(button) {
 document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
     if (!deleteTargetId) return;
 
-    fetch(`/todos/delete/${deleteTargetId}`, {
+    fetchWithAuth(`/todos/delete/${deleteTargetId}`, {
         method: 'DELETE'
     }).then(res => {
         if (res.ok) {
@@ -129,7 +134,7 @@ document.getElementById('saveEditBtn').addEventListener('click', () => {
     const id = event.target.getAttribute('data-id');
     const task = document.getElementById('editTaskInput').value;
 
-    fetch(`/todos/update-ajax/${id}`, {
+    fetchWithAuth(`/todos/update-ajax/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ task })
@@ -146,7 +151,7 @@ document.getElementById('saveEditBtn').addEventListener('click', () => {
 function toggleCompleted(checkbox) {
     const todoId = checkbox.getAttribute('data-id');
 
-    fetch(`/todos/${todoId}/toggle`, {
+    fetchWithAuth(`/todos/${todoId}/toggle`, {
         method: 'PATCH',
         headers: {
             // 'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').getAttribute('content'),
@@ -188,7 +193,7 @@ function sortByGroup(groupId) {
     localStorage.setItem('sortedGroupId', groupId);
 
     //　未完了用
-    fetch(groupId ? `/todos/group/${groupId}?completed=false` : '/todos/all?completed=false')
+    fetchWithAuth(groupId ? `/todos/group/${groupId}?completed=false` : '/todos/all?completed=false')
         .then(res => res.json())
         .then(todos => {
             const list = document.getElementById('incompleteTasksList');
@@ -206,7 +211,7 @@ function sortByGroup(groupId) {
         });
 
     // 完了用
-    fetch(groupId ? `/todos/group/${groupId}?completed=true` : '/todos/all?completed=true')
+    fetchWithAuth(groupId ? `/todos/group/${groupId}?completed=true` : '/todos/all?completed=true')
         .then(res => res.json())
         .then(todos => {
             const list = document.getElementById('completedTasksList');
@@ -223,7 +228,7 @@ document.getElementById("groupSortDropdown").addEventListener("click", function 
     const groupSortList = document.getElementById("groupSortList");
     groupSortList.innerHTML = ''; // 一旦クリア
 
-    fetch("/todos/groups")
+    fetchWithAuth("/todos/groups/list")
         .then(response => response.json())
         .then(groups => {
             // 「全て」ボタン
@@ -325,4 +330,42 @@ function createTaskElement(todo) {
     li.appendChild(rightDiv);
 
     return li;
+}
+
+// ログインセッションの確認
+function fetchWithAuth(url, options = {}) {
+    return fetch(url, options).then(response => {
+        if (response.status === 401) {
+            // 認証切れ → ログインページへ
+            window.location.href = '/login';
+            return Promise.reject(new Error("Unauthorized"));
+        }
+        return response;
+    });
+}
+
+function fetchAndUpdateGroupOptions() {
+    fetchWithAuth('/todos/groups/list')
+        .then(response => response.json())
+        .then(groups => {
+            const select = document.getElementById('taskGroupSelect');
+
+            // 最初の2つ（--グループを選択--, 新しいグループを作成）は残す
+            const baseOptions = `
+          <option value="">-- グループを選択 --</option>
+          <option value="__new__">新しいグループを作成</option>
+        `;
+            select.innerHTML = baseOptions;
+
+            // 取得したグループを追加
+            groups.forEach(group => {
+                const option = document.createElement('option');
+                option.value = group.id;
+                option.textContent = group.name;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('グループ取得エラー:', error);
+        });
 }

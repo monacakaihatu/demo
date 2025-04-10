@@ -1,5 +1,7 @@
 package com.example.demo.controller;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -8,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.model.Todo;
@@ -17,8 +20,12 @@ import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.TodoRepository;
 import com.example.demo.repository.TaskGroupRepository;
 import com.example.demo.service.TodoService;
+
+import jakarta.validation.Valid;
+
 import com.example.demo.model.dto.TodoDto;
 import com.example.demo.model.dto.GroupsDto;
+import com.example.demo.model.form.TodoForm;
 
 @Controller
 @RequestMapping("/todos")
@@ -94,13 +101,21 @@ public class TodoController {
 
     @PostMapping("/add-ajax")
     @ResponseBody
-    public ResponseEntity<Todo> addTodoAjax(@RequestBody Map<String, String> payload) {
-        String task = payload.get("task");
-        String groupId = payload.get("groupId");
-        String newGroupName = payload.get("newGroupName");
+    public ResponseEntity<?> addTodoAjax(@Valid @RequestBody TodoForm form, BindingResult bindingResult) {
+        // バリデーションエラーの処理
+        System.out.println("=== 受信フォーム ===");
+        System.out.println("task = " + form.getTask());
+        System.out.println("groupId = " + form.getGroupId());
+        System.out.println("newGroupName = " + form.getNewGroupName());
 
-        if (task == null || task.isBlank()) {
-            throw new RuntimeException("タスクが空です！");
+        if (bindingResult.hasErrors()) {
+            System.out.println("バリデーションエラー: " + bindingResult.getAllErrors());
+
+            Map<String, String> errors = new HashMap<>();
+            bindingResult.getFieldErrors().forEach(error -> {
+                errors.put(error.getField(), error.getDefaultMessage());
+            });
+            return ResponseEntity.badRequest().body(errors);
         }
 
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -108,25 +123,33 @@ public class TodoController {
                 .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません: " + username));
 
         Todo todo = new Todo();
-        todo.setTask(task);
+        todo.setTask(form.getTask());
         todo.setCompleted(false);
         todo.setUser(user);
-        
+
         // グループの処理
-        if (newGroupName != null && !newGroupName.isBlank()) {
+        if (form.getNewGroupName() != null && !form.getNewGroupName().isBlank()) {
             TaskGroup newGroup = new TaskGroup();
-            newGroup.setName(newGroupName);
+            newGroup.setName(form.getNewGroupName());
             newGroup.setUser(user);
             taskGroupRepository.save(newGroup);
             todo.setTaskGroup(newGroup);
-        } else if (groupId != null && !groupId.isBlank()) {
-            taskGroupRepository.findById(Long.parseLong(groupId)).ifPresent(todo::setTaskGroup);
-            todo.setTaskGroup(taskGroupRepository.findById(Long.parseLong(groupId))
-                    .orElseThrow(() -> new RuntimeException("グループが見つかりません: " + groupId)));
+        } else if (form.getGroupId() != null) {
+            TaskGroup group = taskGroupRepository.findById(form.getGroupId())
+                    .orElseThrow(() -> new RuntimeException("グループが見つかりません: " + form.getGroupId()));
+            todo.setTaskGroup(group);
         }
-        
+
         Todo saved = todoService.saveTodoAjax(todo);
-        return ResponseEntity.ok(saved);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", saved.getId());
+        response.put("task", saved.getTask());
+        response.put("completed", saved.isCompleted());
+        response.put("groupId", saved.getTaskGroup() != null ? saved.getTaskGroup().getId() : null);
+        response.put("groupName", saved.getTaskGroup() != null ? saved.getTaskGroup().getName() : null);
+
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/delete/{id}")
@@ -145,6 +168,7 @@ public class TodoController {
             return ResponseEntity.notFound().build();
 
         todo.setTask(task);
+        todo.setUpdatedAt(LocalDateTime.now());
         todoService.saveTodo(todo);
 
         return ResponseEntity.ok(todo);

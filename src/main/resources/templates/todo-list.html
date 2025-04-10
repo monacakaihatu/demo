@@ -4,7 +4,7 @@
 <body>
   <div th:fragment="content" class="container my-4">
     <div th:replace="fragments/group-modals :: groupModals"></div>
-    <h1 class="text-center mb-4">To-Doリスト</h1>
+    <h1 class="text-center mb-4">TODOリスト</h1>
 
     <!-- タスク追加ボタン -->
     <div class="text-end mb-4">
@@ -169,6 +169,7 @@
     <!-- JS -->
     <script th:src="@{/js/task-api.js}"></script>
     <script th:src="@{/js/group-edit.js}"></script>
+    <script th:src="@{/js/form-validation.js}"></script>
     <script>
       // 新しいグループ選択時の表示制御
       document.getElementById('taskGroupSelect').addEventListener('change', function () {

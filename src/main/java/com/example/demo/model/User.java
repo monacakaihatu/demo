@@ -1,5 +1,6 @@
 package com.example.demo.model;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -30,6 +31,9 @@ public class User {
 
     @Column(nullable = false)
     private String password;
+
+    @Column(nullable = true)
+    private LocalDateTime lastLoginTime;
 
     @OneToMany(mappedBy = "user")
     @JsonManagedReference

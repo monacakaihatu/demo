@@ -3,6 +3,8 @@ package com.example.demo.controller;
 import com.example.demo.model.User;
 import com.example.demo.repository.UserRepository;
 
+import java.time.LocalDateTime;
+
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,11 +24,24 @@ public class AuthController {
     }
 
     @GetMapping("/login")
-    public String loginPage() {
+    public String loginPage(
+            @RequestParam(value = "error", required = false) String error,
+            Model model) {
         if (SecurityContextHolder.getContext().getAuthentication() != null &&
             SecurityContextHolder.getContext().getAuthentication().isAuthenticated() &&
-            !(SecurityContextHolder.getContext().getAuthentication() instanceof AnonymousAuthenticationToken)) {
+            !(SecurityContextHolder.getContext().getAuthentication() instanceof AnonymousAuthenticationToken)) 
+        {
+            //  ログイン時間の登録
+            User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            user.setLastLoginTime(LocalDateTime.now());
+            userRepository.save(user);
+
+            System.out.println("User last login time updated: " + user.getLastLoginTime());
+
             return "redirect:/todos"; // 認証済みの場合はリダイレクト
+        }
+        if (error != null) {
+            model.addAttribute("errorMessage", "メールアドレスまたはパスワードが正しくありません。");
         }
         return "login"; // 未認証の場合はログインページを表示
     }
@@ -38,8 +53,8 @@ public class AuthController {
 
     @PostMapping("/register")
     public String registerUser(@RequestParam String username,
-                                @RequestParam String password,
-                                Model model) {
+            @RequestParam String password,
+            Model model) {
         if (userRepository.findByUsername(username).isPresent()) {
             model.addAttribute("error", "Username already exists.");
             return "register";
