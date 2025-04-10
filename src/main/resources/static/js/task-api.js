@@ -46,6 +46,7 @@ function handleAddTodo(event) {
                     throw new Error("バリデーションエラー");
                 });
             }
+            return response.json();
         })
         .then(todo => {
             const modal = bootstrap.Modal.getInstance(document.getElementById('addTaskModal'));

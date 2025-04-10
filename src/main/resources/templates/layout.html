@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- <meta name="_csrf" th:content="${_csrf.token}" /> -->
-    <title th:text="${title}">To-Do App</title>
+    <title th:text="${title}">TODOアプリ（でもでも）</title>
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
@@ -23,7 +23,7 @@
 <body>
     <nav class="navbar navbar-expand-md custom-navbar">
         <div class="container">
-            <a class="navbar-brand text-light" href="/">To-Do App</a>
+            <a class="navbar-brand text-light" href="/">TODOアプリ</a>
 
             <!-- ハンバーガーボタン -->
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
@@ -34,29 +34,32 @@
             <!-- ナビゲーションメニュー -->
             <div class="collapse navbar-collapse" id="navbarContent">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link text-light" href="/">Home</a></li>
-                    <li class="nav-item"><a class="nav-link text-light" href="/todos">To-Do List</a></li>
+                    <li class="nav-item" sec:authorize="isAnonymous()"><a class="nav-link text-light" href="/">ホーム</a></li>
+                    <li class="nav-item"><a class="nav-link text-light" href="/todos">TODOリスト</a></li>
 
                     <!-- 認証済み -->
+                     <li class="nav-item" sec:authorize="isAuthenticated()">
+                        <a class="nav-link text-light" href="/dashboard">統計</a>
+                    </li>
                     <li class="nav-item" sec:authorize="isAuthenticated()">
-                        <a class="nav-link text-light" href="/logout">Logout</a>
+                        <a class="nav-link text-light" href="/logout">ログアウト</a>
                     </li>
                     <li class="nav-item d-md-none" sec:authorize="isAuthenticated()">
                         <span class="nav-link text-light fst-italic">
-                            こんにちは、<span th:text="${currentUserName}">ユーザー</span> さん
+                            こんにちは　<span th:text="${currentUserName}">ユーザー</span> さん
                         </span>
                     </li>
                     <span class="nav-link text-light text-decoration-underline fst-italic d-none d-md-block"
                         sec:authorize="isAuthenticated()">
-                        こんにちは、<span th:text="${currentUserName}">ユーザー</span> さん
+                        こんにちは　<span th:text="${currentUserName}">ユーザー</span> さん
                     </span>
 
                     <!-- 未認証 -->
                     <li class="nav-item" sec:authorize="isAnonymous()">
-                        <a class="nav-link text-light" href="/login">Login</a>
+                        <a class="nav-link text-light" href="/login">ログイン</a>
                     </li>
                     <li class="nav-item" sec:authorize="isAnonymous()">
-                        <a class="nav-link text-light" href="/register">Register</a>
+                        <a class="nav-link text-light" href="/register">新規登録</a>
                     </li>
                 </ul>
             </div>
