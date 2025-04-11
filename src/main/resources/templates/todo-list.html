@@ -4,8 +4,6 @@
 <body>
   <div th:fragment="content" class="container my-4">
     <div th:replace="fragments/group-modals :: groupModals"></div>
-    <h1 class="text-center mb-4">TODOリスト</h1>
-
     <!-- タスク追加ボタン -->
     <div class="text-end mb-4">
       <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addTaskModal">
@@ -24,6 +22,10 @@
           <div class="modal-body">
             <div class="mb-3">
               <input type="text" name="task" class="form-control" placeholder="タスク名" required>
+            </div>
+            <div class="mb-3">
+              <label for="dueDate">期日</label>
+              <input type="date" id="dueDate" name="dueDate" class="form-control" />
             </div>
             <div class="mb-3">
               <label for="taskGroupSelect" class="form-label">タスクグループ</label>
@@ -46,19 +48,16 @@
       </div>
     </div>
 
-    <!-- 未完了のタスク -->
+    <!-- 見出しとソート -->
     <div class="row align-items-center mb-3">
       <div class="col-6 col-md-6 d-flex flex-wrap align-items-center gap-2 mb-2 mb-md-0">
         <h3 class="mb-0 text-nowrap">未完了のタスク</h3>
-        <span class="badge bg-secondary">
-          <span id="incompleteCountNumber" th:text="${count}">0</span> 件表示中
-        </span>
       </div>
       <div class="col-6 col-md-6 text-center text-md-end">
         <div class="dropdown">
           <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="groupSortDropdown"
             data-bs-toggle="dropdown" aria-expanded="false">
-            グループでソート
+            グループで絞り込む
           </button>
           <ul id="groupSortList" class="dropdown-menu dropdown-menu-end" aria-labelledby="groupSortDropdown">
             <li><a class="dropdown-item" href="#" onclick="sortByGroup('')">全て</a></li>
@@ -71,8 +70,46 @@
       </div>
     </div>
 
-    <ul class="list-group mb-4" id="incompleteTasksList">
-      <li th:each="todo : ${todos}" th:if="${!todo.completed}" th:id="'todo-' + ${todo.id}"
+    <!-- （未完了）タスク -->
+    <!-- 今日まで -->
+    <div class="border rounded-4 shadow-sm p-3 mb-5" style="border-color: #dc3545;">
+      <h4 class="mt-2 mb-3 text-danger border-bottom pb-2">今日までのタスク</h4>
+      <ul class="list-group" id="todayTasksList">
+        <li th:each="todo : ${dueTodayOrPast}" th:id="'todo-' + ${todo.id}" th:data-groupid="${todo.taskGroup?.id}"
+          class="list-group-item d-flex justify-content-between align-items-center border-0 border-bottom">
+          <div class="d-flex align-items-center gap-3">
+            <label class="custom-checkbox m-0">
+              <input type="checkbox" class="real-checkbox" th:attr="data-id=${todo.id}"
+                onchange="toggleCompleted(this)" />
+              <span class="checkmark"></span>
+            </label>
+            <span th:text="${todo.task}" class="fs-5 task-span"></span>
+            <small class="task-due text-muted"
+              th:text="'期限: ' + ${#temporals.format(todo.dueDate, 'yyyy/MM/dd')}"></small>
+            <small class="task-due text-muted" th:if="!${todo.dueDate}"></small>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary btn-sm"
+              th:attr="data-id=${todo.id}, data-task=${todo.task}, data-due=${todo.dueDate}"
+              onclick="openEditModalFromButton(this)">
+              編集
+            </button>
+            <button type="button" class="btn btn-outline-danger btn-sm" th:attr="data-id=${todo.id}"
+              onclick="showDeleteConfirmModal(this)">
+              削除
+            </button>
+          </div>
+        </li>
+        <li th:if="${dueTodayOrPast == null or #lists.isEmpty(dueTodayOrPast)}"
+          class="none-task list-group-item d-flex justify-content-between align-items-center bg-light text-dark">
+          <div class="d-flex align-items-center gap-3"><span class="fs-5 task-span">なし</span></div>
+        </li>
+      </ul>
+    </div>
+
+
+    <ul class="list-group mb-4" id="otherTasksList">
+      <li th:each="todo : ${dueFutureOrNoDate}" th:id="'todo-' + ${todo.id}" th:data-groupid="${todo.taskGroup?.id}"
         class="list-group-item d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center gap-3">
           <label class="custom-checkbox m-0">
@@ -81,10 +118,14 @@
             <span class="checkmark"></span>
           </label>
           <span th:text="${todo.task}" class="fs-5 task-span"></span>
+          <small class="task-due text-muted" th:if="${todo.dueDate}"
+            th:text="'期限: ' + ${#temporals.format(todo.dueDate, 'yyyy/MM/dd')}"></small>
+          <small class="task-due text-muted" th:if="!${todo.dueDate}"></small>
         </div>
         <div class="d-flex gap-2">
           <button type="button" class="btn btn-outline-primary btn-sm"
-            th:attr="data-id=${todo.id}, data-task=${todo.task}" onclick="openEditModalFromButton(this)">
+            th:attr="data-id=${todo.id}, data-task=${todo.task}, data-due=${todo.dueDate}"
+            onclick="openEditModalFromButton(this)">
             編集
           </button>
           <button type="button" class="btn btn-outline-danger btn-sm" th:attr="data-id=${todo.id}"
@@ -95,6 +136,7 @@
       </li>
     </ul>
 
+
     <!-- 完了済みのタスク -->
     <button id="toggleCompletedTasksBtn" class="btn btn-secondary mb-3" type="button" data-bs-toggle="collapse"
       data-bs-target="#completedTasks" aria-expanded="false" aria-controls="completedTasks">
@@ -104,7 +146,8 @@
     <div class="collapse" id="completedTasks">
       <h3 class="mb-3">完了済みのタスク</h3>
       <ul class="list-group" id="completedTasksList">
-        <li th:each="todo : ${todos}" th:if="${todo.completed}"
+        <li th:each="todo : ${todos}" th:if="${todo.completed}" th:id="'todo-' + ${todo.id}"
+          th:data-groupid="${todo.taskGroup?.id}"
           class="list-group-item d-flex justify-content-between align-items-center">
           <div class="d-flex align-items-center gap-3">
             <label class="custom-checkbox">
@@ -113,10 +156,14 @@
               <span class="checkmark"></span>
             </label>
             <span th:text="${todo.task}" class="fs-5 task-span text-start"></span>
+            <small class="task-due text-muted" th:if="${todo.dueDate}"
+              th:text="'期限: ' + ${#temporals.format(todo.dueDate, 'yyyy/MM/dd')}"></small>
+            <small class="task-due text-muted" th:if="!${todo.dueDate}"></small>
           </div>
           <div class="d-flex gap-2">
             <button type="button" class="btn btn-outline-primary btn-sm"
-              th:attr="data-id=${todo.id}, data-task=${todo.task}" onclick="openEditModalFromButton(this)">
+              th:attr="data-id=${todo.id}, data-task=${todo.task}, data-due=${todo.dueDate}"
+              onclick="openEditModalFromButton(this)">
               編集
             </button>
             <button type="button" class="btn btn-outline-danger btn-sm" th:attr="data-id=${todo.id}"
@@ -137,7 +184,26 @@
             <button class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <input type="text" class="form-control" id="editTaskInput" />
+            <div class="my-1">
+              <label class="mb-1">タスク名</label>
+              <input type="text" class="form-control" id="editTaskInput" />
+            </div>
+            <div class="my-1">
+              <label class="mb-1">期日</label>
+              <input type="date" class="form-control" id="editDueInput" />
+            </div>
+            <div class="mb-3 my-1">
+              <label for="taskGroupSelect" class="form-label">タスクグループ</label>
+              <select id="taskGroupSelectForEdit" class="form-select">
+                <option value="">-- グループを選択 --</option>
+                <option value="__new__">新しいグループを作成</option>
+                <option th:each="group : ${groups}" th:value="${group.id}" th:text="${group.name}"></option>
+              </select>
+            </div>
+            <div id="newGroupInputContainerForEdit" class="mb-3 my-1" style="display: none;">
+              <label for="newGroupName" class="form-label">新しいグループ名</label>
+              <input type="text" id="newGroupNameForEdit" class="form-control">
+            </div>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
@@ -170,13 +236,7 @@
     <script th:src="@{/js/task-api.js}"></script>
     <script th:src="@{/js/group-edit.js}"></script>
     <script th:src="@{/js/form-validation.js}"></script>
-    <script>
-      // 新しいグループ選択時の表示制御
-      document.getElementById('taskGroupSelect').addEventListener('change', function () {
-        const newGroupInput = document.getElementById('newGroupInputContainer');
-        newGroupInput.style.display = this.value === '__new__' ? 'block' : 'none';
-      });
-    </script>
+
   </div>
 </body>
 
