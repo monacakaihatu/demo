@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -114,6 +115,7 @@ public class TodoController {
         todo.setTask(form.getTask());
         todo.setCompleted(false);
         todo.setUser(user);
+        todo.setDueDate(form.getDueDate());
 
         // グループの処理
         if (form.getNewGroupName() != null && !form.getNewGroupName().isBlank()) {
@@ -151,12 +153,20 @@ public class TodoController {
     @ResponseBody
     public ResponseEntity<Todo> updateTodoAjax(@PathVariable Long id, @RequestBody Map<String, String> payload) {
         String task = payload.get("task");
+        String dueDateStr = payload.get("dueDate");
+        
         Todo todo = todoService.findById(id);
         if (todo == null)
             return ResponseEntity.notFound().build();
 
         todo.setTask(task);
         todo.setUpdatedAt(LocalDateTime.now());
+        if (dueDateStr != null && !dueDateStr.isEmpty()) {
+            LocalDate dueDate = LocalDate.parse(dueDateStr); // "yyyy-MM-dd" 形式ならこれでOK
+            todo.setDueDate(dueDate);
+        } else {
+            todo.setDueDate(null); // 未設定にする場合
+        }
         todoService.saveTodo(todo);
 
         return ResponseEntity.ok(todo);

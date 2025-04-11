@@ -3,36 +3,51 @@
 
 <body>
   <div th:fragment="content" class="container py-5">
-    <div class="row d-flex">
-      <h2 class="mb-4 col-6">タスク統計ダッシュボード</h2>
-      <div class="pt-2 col-6 text-end">
+    <div class="row d-flex flex-column flex-md-row">
+      <h2 class="mb-4 col-12 col-md-6">タスク統計ダッシュボード</h2>
+      <div class="pt-2 col-12 col-md-6 text-md-end">
         <select id="taskGroupSelectOnDashboard" class="form-select">
-          <option value="">-- グループでソート --</option>
+          <option value="">全てのグループ</option>
           <option th:each="group : ${groups}" th:value="${group.id}" th:text="${group.name}"></option>
         </select>
       </div>
     </div>
 
-    <div class="card shadow-sm rounded-4 p-4">
-      <div class="row align-items-center">
-        <div class="col-md-6">
-          <canvas id="taskChart" height="200"></canvas>
+    <div class="row g-4 mt-1">
+      <!-- グラフ1 -->
+      <div class="col-md-6 my-md-auto">
+        <div class="card shadow-sm rounded-4 p-4">
+          <h5 class="mb-3">期限別タスク統計</h5>
+          <canvas id="dueStatsChart"></canvas>
         </div>
-        <div class="col-md-6">
-          <ul class="list-group list-group-flush fs-5">
-            <li class="list-group-item d-flex justify-content-between">
-              <span>完了タスク</span>
-              <span id="completedCount" class="text-success fw-bold">0</span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between">
-              <span>未完了タスク</span>
-              <span id="uncompletedCount" class="text-danger fw-bold">0</span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between">
-              <span>総タスク数</span>
-              <span id="totalCount" class="fw-bold">0</span>
-            </li>
-          </ul>
+      </div>
+
+      <!-- 統計サマリー -->
+      <div class="col-md-6 my-md-auto">
+        <div class="card shadow-sm rounded-4 p-4">
+          <h5 class="mb-3">ステータス統計</h5>
+
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <canvas id="taskChart"></canvas>
+            </div>
+            <div class="col-md-6">
+              <ul class="list-group list-group-flush fs-5">
+                <li class="list-group-item d-flex justify-content-between">
+                  <span>完了タスク</span>
+                  <span id="completedCount" class="text-success fw-bold">0</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                  <span>未完了タスク</span>
+                  <span id="uncompletedCount" class="text-danger fw-bold">0</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                  <span>総タスク数</span>
+                  <span id="totalCount" class="fw-bold">0</span>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </div>

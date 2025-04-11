@@ -1,9 +1,9 @@
-let chart = null; // グローバルで保持
+let chart = null;
+let dueChartInstance = null;
 
 function createChart(data) {
   const ctx = document.getElementById('taskChart').getContext('2d');
 
-  // すでに存在してたら破棄してから再生成
   if (chart) {
     chart.destroy();
   }
@@ -23,27 +23,68 @@ function createChart(data) {
       responsive: true,
       animation: {
         duration: 1000,
-        easing: 'easeOutQuart' // お好みで
+        easing: 'easeOutQuart'
       },
       plugins: {
-        legend: {
-          position: 'bottom'
-        }
+        legend: { position: 'bottom' }
       }
     }
   });
 
-  // カウント表示更新
   document.getElementById('completedCount').textContent = data.completed;
   document.getElementById('uncompletedCount').textContent = data.uncompleted;
   document.getElementById('totalCount').textContent = data.completed + data.uncompleted;
 }
 
+function updateDueStatsChart(groupId = "") {
+  const url = groupId ? `/api/stats/due?groupId=${groupId}` : '/api/stats/due-categories';
+
+  fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      const canvas = document.getElementById("dueStatsChart");
+      const ctx = canvas.getContext("2d");
+
+      if (dueChartInstance) {
+        dueChartInstance.destroy();
+      }
+
+      dueChartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: Object.keys(data),
+          datasets: [{
+            label: "タスク数",
+            data: Object.values(data),
+            backgroundColor: ['#ff6666', '#ff9999', '#ffcc66', '#66b3ff', '#999999'],
+          }]
+        },
+        options: {
+          responsive: true,
+          indexAxis: 'y',
+          plugins: {
+            legend: { position: 'top' }
+          },
+          scales: {
+            x: {
+              ticks: {
+                callback: function(value) {
+                  return Number.isInteger(value) ? value : '';
+                },
+                stepSize: 1
+              },
+              beginAtZero: true,
+              suggestedMax: 5
+            }
+          }
+        }
+      });
+    });
+}
+
+
 function fetchAndUpdateChart(groupId = '') {
-  let url = '/api/stats/summary';
-  if (groupId) {
-    url = '/api/stats/group/' + groupId;
-  }
+  const url = groupId ? `/api/stats/group/${groupId}` : '/api/stats/summary';
 
   fetch(url)
     .then(response => response.json())
@@ -51,10 +92,13 @@ function fetchAndUpdateChart(groupId = '') {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  fetchAndUpdateChart(); // 初期ロード
+  fetchAndUpdateChart();
+  updateDueStatsChart();
 
-  document.getElementById('taskGroupSelectOnDashboard').addEventListener('change', function () {
+  const select = document.getElementById('taskGroupSelectOnDashboard');
+  select.addEventListener('change', function () {
     const groupId = this.value;
     fetchAndUpdateChart(groupId);
+    updateDueStatsChart(groupId);
   });
 });

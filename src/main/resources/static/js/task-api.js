@@ -27,9 +27,11 @@ function handleAddTodo(event) {
     const task = document.querySelector('input[name="task"]').value;
     const addFormGroupId = document.getElementById("taskGroupSelect").value;
     const newGroupName = document.getElementById("newGroupName").value;
+    const dueDate = document.getElementById("dueDate").value;
 
     const payload = {
         task: task,
+        dueDate: dueDate,
         groupId: addFormGroupId !== "__new__" ? addFormGroupId : null,
         newGroupName: addFormGroupId === "__new__" ? newGroupName : null
     };
@@ -56,6 +58,7 @@ function handleAddTodo(event) {
             document.querySelector('input[name="task"]').value = "";
             document.getElementById("newGroupName").value = "";
             document.getElementById("taskGroupSelect").value = "";
+            document.getElementById("dueDate").value = "";
 
             const sortedGroupId = localStorage.getItem('sortedGroupId') ?? '';
             const currentGroupId = addFormGroupId ?? '';
@@ -120,13 +123,16 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
 function openEditModalFromButton(button) {
     const id = button.getAttribute('data-id');
     const task = button.getAttribute('data-task');
-    openEditModal(id, task);
+    const due = button.getAttribute('data-due');
+    openEditModal(id, task, due);
 }
 
-function openEditModal(id, currentTask) {
+function openEditModal(id, currentTask, due = "") {
     const input = document.getElementById('editTaskInput');
+    const dueInput = document.getElementById('editDueInput');
     const saveBtn = document.getElementById('saveEditBtn');
     input.value = currentTask;
+    dueInput.value = due;
     saveBtn.setAttribute('data-id', id);
     new bootstrap.Modal(document.getElementById('editModal')).show();
 }
@@ -134,16 +140,24 @@ function openEditModal(id, currentTask) {
 document.getElementById('saveEditBtn').addEventListener('click', () => {
     const id = event.target.getAttribute('data-id');
     const task = document.getElementById('editTaskInput').value;
+    const dueDate = document.getElementById('editDueInput').value;
 
     fetchWithAuth(`/todos/update-ajax/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task })
+        body: JSON.stringify({ task, dueDate })
     })
         .then(res => res.json())
         .then(updated => {
             const li = document.querySelector(`[data-id="${id}"]`).closest('li');
             li.querySelector('.task-span').textContent = updated.task;
+            if (dueDate) {
+                const dateObj = new Date(dueDate);
+                const formatted = dateObj.getFullYear() + '/' +
+                    String(dateObj.getMonth() + 1).padStart(2, '0') + '/' +
+                    String(dateObj.getDate()).padStart(2, '0');
+                li.querySelector('.task-due').textContent = "期限: " + formatted;
+            }
             bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
         });
 });
@@ -170,6 +184,10 @@ function toggleCompleted(checkbox) {
             } else {
                 incompleteList.appendChild(item);
             }
+
+            const count = incompleteList.querySelectorAll('li').length;
+            const countSpan = document.getElementById("incompleteCountNumber");
+            countSpan.textContent = count;
         }
     });
 }
@@ -306,6 +324,14 @@ function createTaskElement(todo) {
 
     leftDiv.appendChild(label);
     leftDiv.appendChild(taskSpan);
+
+    if (todo.dueDate) {
+        const dueDateText = document.createElement("small");
+        dueDateText.className = "text-muted";
+        const due = new Date(todo.dueDate);
+        dueDateText.textContent = `期限: ${due.getFullYear()}/${(due.getMonth() + 1).toString().padStart(2, '0')}/${due.getDate().toString().padStart(2, '0')}`;
+        leftDiv.appendChild(dueDateText);
+    }
 
     // 右側：編集・削除ボタン
     const rightDiv = document.createElement("div");
