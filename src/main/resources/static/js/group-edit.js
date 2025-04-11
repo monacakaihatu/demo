@@ -16,13 +16,13 @@ document.getElementById("saveGroupChangesBtn").addEventListener("click", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newName })
     })
-    .then(res => {
-        if (res.ok) {
-            // モーダルを閉じて、グループ再読み込み（UIの更新）
-            bootstrap.Modal.getInstance(document.getElementById("editGroupModal")).hide();
-            sortByGroup(localStorage.getItem("sortedGroupId") || "");
-        }
-    });
+        .then(res => {
+            if (res.ok) {
+                // モーダルを閉じて、グループ再読み込み（UIの更新）
+                bootstrap.Modal.getInstance(document.getElementById("editGroupModal")).hide();
+                sortByGroup(localStorage.getItem("sortedGroupId") || "");
+            }
+        });
 });
 
 // 削除ボタン→確認モーダル表示
@@ -35,19 +35,15 @@ document.getElementById("confirmDeleteGroupBtn").addEventListener("click", () =>
     fetchWithAuth(`/todos/groups/${editingGroupId}`, {
         method: "DELETE"
     })
-    .then(res => {
-        if (res.ok) {
-            // 両モーダルを閉じて、一覧更新
-            bootstrap.Modal.getInstance(document.getElementById("editGroupModal")).hide();
-            bootstrap.Modal.getInstance(document.getElementById("confirmGroupDeleteModal")).hide();
-            sortByGroup(""); // 全表示に戻す
-            localStorage.removeItem("sortedGroupId");
-            document.querySelector('#groupSortDropdown').textContent = '全て';
-            localStorage.setItem('sortedGroupId', ''); // ソート状態をリセット
-
-            // 未完了タスク件数を更新
-            const count = document.querySelectorAll('#incompleteTasksList li').length;
-            document.getElementById("incompleteCountNumber").textContent = count;
-        }
-    });
+        .then(res => {
+            if (res.ok) {
+                // 両モーダルを閉じて、一覧更新
+                bootstrap.Modal.getInstance(document.getElementById("editGroupModal")).hide();
+                bootstrap.Modal.getInstance(document.getElementById("confirmGroupDeleteModal")).hide();
+                sortByGroup(""); // 全表示に戻す
+                localStorage.removeItem("sortedGroupId");
+                document.querySelector('#groupSortDropdown').textContent = '全て';
+                localStorage.setItem('sortedGroupId', ''); // ソート状態をリセット
+            }
+        });
 });

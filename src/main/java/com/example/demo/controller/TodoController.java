@@ -2,17 +2,21 @@ package com.example.demo.controller;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.example.demo.model.Todo;
 import com.example.demo.model.User;
@@ -65,14 +69,42 @@ public class TodoController {
         List<Todo> todos = todoRepository.findByUser(user);
         List<TaskGroup> groups = taskGroupRepository.findByUser(user);
 
-        model.addAttribute("todos", todos);
-        model.addAttribute("groups", groups);
+        // 今日の日付
+        LocalDate today = LocalDate.now();
 
-        // 未完了のタスクのカウント総数
-        long count = todos.stream().filter(todo -> !todo.isCompleted()).count();
-        model.addAttribute("count", count);
+        // 今日までの未完了タスク
+        List<Todo> dueTodayOrPast = new ArrayList<>();
+        // それ以外の未完了タスク（未来 or 期限なし）
+        List<Todo> dueFutureOrNoDate = new ArrayList<>();
+
+        for (Todo todo : todos) {
+            if (!todo.isCompleted()) {
+                if (todo.getDueDate() != null && !todo.getDueDate().isAfter(today)) {
+                    dueTodayOrPast.add(todo);
+                } else {
+                    dueFutureOrNoDate.add(todo);
+                }
+            }
+        }
+
+        model.addAttribute("dueTodayOrPast", dueTodayOrPast);
+        model.addAttribute("dueFutureOrNoDate", dueFutureOrNoDate);
+        model.addAttribute("groups", groups);
+        model.addAttribute("todos", todos);
+
+        // 未完了の合計カウント（任意）
+        model.addAttribute("count", dueTodayOrPast.size() + dueFutureOrNoDate.size());
 
         return "todo-list";
+    }
+
+    @GetMapping("/api/{id}")
+    @ResponseBody
+    public TodoDto getTodoDetail(@PathVariable Long id) {
+        Todo todo = todoService.findById(id);
+        if (todo == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+
+        return new TodoDto(todo); // DTOで返却
     }
 
     @PatchMapping("/{id}/toggle")
@@ -91,15 +123,7 @@ public class TodoController {
     @PostMapping("/add-ajax")
     @ResponseBody
     public ResponseEntity<?> addTodoAjax(@Valid @RequestBody TodoForm form, BindingResult bindingResult) {
-        // バリデーションエラーの処理
-        System.out.println("=== 受信フォーム ===");
-        System.out.println("task = " + form.getTask());
-        System.out.println("groupId = " + form.getGroupId());
-        System.out.println("newGroupName = " + form.getNewGroupName());
-
         if (bindingResult.hasErrors()) {
-            System.out.println("バリデーションエラー: " + bindingResult.getAllErrors());
-
             Map<String, String> errors = new HashMap<>();
             bindingResult.getFieldErrors().forEach(error -> {
                 errors.put(error.getField(), error.getDefaultMessage());
@@ -131,15 +155,75 @@ public class TodoController {
         }
 
         Todo saved = todoService.saveTodoAjax(todo);
+        LocalDate today = LocalDate.now();
+        boolean isToday = false;
+
+        if (todo.getDueDate() != null && !todo.getDueDate().isAfter(today)) {
+            isToday = true;
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("id", saved.getId());
         response.put("task", saved.getTask());
         response.put("completed", saved.isCompleted());
+        response.put("dueDate", saved.getDueDate());
         response.put("groupId", saved.getTaskGroup() != null ? saved.getTaskGroup().getId() : null);
         response.put("groupName", saved.getTaskGroup() != null ? saved.getTaskGroup().getName() : null);
+        response.put("isToday", isToday);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/update-ajax/{id}")
+    @ResponseBody
+    public ResponseEntity<?> updateTodoAjax(@PathVariable Long id, @Valid @RequestBody TodoForm form,
+            BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            Map<String, String> errors = new HashMap<>();
+            bindingResult.getFieldErrors().forEach(error -> {
+                errors.put(error.getField(), error.getDefaultMessage());
+            });
+            return ResponseEntity.badRequest().body(errors);
+        }
+
+        LocalDate dueDate = form.getDueDate();
+
+        Todo todo = todoService.findById(id);
+        if (todo == null)
+            return ResponseEntity.notFound().build();
+
+        todo.setTask(form.getTask());
+        todo.setUpdatedAt(LocalDateTime.now(ZoneId.of("Asia/Tokyo")));
+
+        if (dueDate != null) {
+            todo.setDueDate(dueDate);
+        } else {
+            todo.setDueDate(null);
+        }
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません: " + username));
+
+        // グループの処理
+        if (form.getNewGroupName() != null && !form.getNewGroupName().isBlank()) {
+            TaskGroup newGroup = new TaskGroup();
+            newGroup.setName(form.getNewGroupName());
+            newGroup.setUser(user);
+            taskGroupRepository.save(newGroup);
+            todo.setTaskGroup(newGroup);
+        } else if (form.getGroupId() != null) {
+            TaskGroup group = taskGroupRepository.findById(form.getGroupId())
+                    .orElseThrow(() -> new RuntimeException("グループが見つかりません: " + form.getGroupId()));
+            todo.setTaskGroup(group);
+        }
+        todoService.saveTodo(todo);
+        
+        // debug 
+        System.out.println("form：　　　" + form);
+        System.out.println("デバッグ：　　　" + todo);
+        
+        return ResponseEntity.ok(todo);
     }
 
     @DeleteMapping("/delete/{id}")
@@ -147,29 +231,6 @@ public class TodoController {
     public ResponseEntity<?> deleteTodoAjax(@PathVariable Long id) {
         todoService.deleteTodo(id);
         return ResponseEntity.ok().build();
-    }
-
-    @PutMapping("/update-ajax/{id}")
-    @ResponseBody
-    public ResponseEntity<Todo> updateTodoAjax(@PathVariable Long id, @RequestBody Map<String, String> payload) {
-        String task = payload.get("task");
-        String dueDateStr = payload.get("dueDate");
-        
-        Todo todo = todoService.findById(id);
-        if (todo == null)
-            return ResponseEntity.notFound().build();
-
-        todo.setTask(task);
-        todo.setUpdatedAt(LocalDateTime.now());
-        if (dueDateStr != null && !dueDateStr.isEmpty()) {
-            LocalDate dueDate = LocalDate.parse(dueDateStr); // "yyyy-MM-dd" 形式ならこれでOK
-            todo.setDueDate(dueDate);
-        } else {
-            todo.setDueDate(null); // 未設定にする場合
-        }
-        todoService.saveTodo(todo);
-
-        return ResponseEntity.ok(todo);
     }
 
     @GetMapping("/all")

@@ -3,20 +3,15 @@ window.addEventListener("load", function () {
     localStorage.removeItem('sortedGroupId'); // グループIDを削除
 });
 
-// 未完了タスク件数カウント
-function updateIncompleteCount() {
-    const count = document.querySelectorAll('#incompleteTasksList li').length;
-    document.getElementById("incompleteCountNumber").textContent = count;
-}
-
 // タスクグループ追加
-document.getElementById("taskGroupSelect").addEventListener("change", function () {
-    const newGroupInput = document.getElementById("newGroupInputContainer");
-    if (this.value === "__new__") {
-        newGroupInput.style.display = "block";
-    } else {
-        newGroupInput.style.display = "none";
-    }
+document.getElementById('taskGroupSelect').addEventListener('change', function () {
+    const newGroupInput = document.getElementById('newGroupInputContainer');
+    newGroupInput.style.display = this.value === '__new__' ? 'block' : 'none';
+});
+
+document.getElementById('taskGroupSelectForEdit').addEventListener('change', function () {
+    const newGroupInput = document.getElementById('newGroupInputContainerForEdit');
+    newGroupInput.style.display = this.value === '__new__' ? 'block' : 'none';
 });
 
 // タスク追加
@@ -51,8 +46,7 @@ function handleAddTodo(event) {
             return response.json();
         })
         .then(todo => {
-            const modal = bootstrap.Modal.getInstance(document.getElementById('addTaskModal'));
-            modal.hide();
+            bootstrap.Modal.getInstance(document.getElementById('addTaskModal')).hide();
 
             // フォームリセット
             document.querySelector('input[name="task"]').value = "";
@@ -78,9 +72,9 @@ function handleAddTodo(event) {
 
             // 一致する場合は画面に即追加
             const li = createTaskElement(todo);
-            document.getElementById('incompleteTasksList').appendChild(li);
+            todo.isToday === true ? document.getElementById('todayTasksList').appendChild(li) : document.getElementById('otherTasksList').appendChild(li);
 
-            updateIncompleteCount(); // 件数カウントを更新
+            todaysTaskNoneToggle();
         })
         .catch(error => {
             console.error("エラー:", error);
@@ -112,52 +106,144 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
             // モーダル閉じる
             bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal')).hide();
             document.querySelector('input[name="task"]').focus();
-
-            updateIncompleteCount(); // 件数カウントを更新
         }
     });
 });
 
-
 // タスク編集
 function openEditModalFromButton(button) {
     const id = button.getAttribute('data-id');
-    const task = button.getAttribute('data-task');
-    const due = button.getAttribute('data-due');
-    openEditModal(id, task, due);
+
+    // タスク情報をAPIから取得
+    fetchWithAuth(`/todos/api/${id}`)
+        .then(res => res.json())
+        .then(todo => {
+            const task = todo.task;
+            const dueDate = todo.dueDate ? new Date(todo.dueDate) : null;
+            const groupId = todo.taskGroup?.id ?? "";
+            const groupName = todo.taskGroup?.name ?? "";
+
+            let dueFormatted = "";
+            if (dueDate) {
+                dueFormatted = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}-${String(dueDate.getDate()).padStart(2, '0')}`;
+            }
+
+            openEditModal(id, task, dueFormatted, groupId, groupName);
+        })
+        .catch(err => {
+            console.error("タスク情報の取得に失敗しました", err);
+            alert("タスク情報の取得に失敗しました");
+        });
 }
 
-function openEditModal(id, currentTask, due = "") {
+function openEditModal(id, currentTask, due = "", groupId = "", groupName = "") {
     const input = document.getElementById('editTaskInput');
     const dueInput = document.getElementById('editDueInput');
+    const groupInput = document.getElementById('taskGroupSelectForEdit');
     const saveBtn = document.getElementById('saveEditBtn');
     input.value = currentTask;
     dueInput.value = due;
+    if (groupInput) {
+        // optionがなければ追加
+        if (![...groupInput.options].some(opt => opt.value === String(groupId))) {
+            const option = document.createElement("option");
+            option.value = groupId;
+            option.textContent = groupName;
+            groupInput.appendChild(option);
+        }
+
+        groupInput.value = groupId;
+    }
     saveBtn.setAttribute('data-id', id);
+
     new bootstrap.Modal(document.getElementById('editModal')).show();
 }
 
 document.getElementById('saveEditBtn').addEventListener('click', () => {
+    clearEditErrors();
+
     const id = event.target.getAttribute('data-id');
     const task = document.getElementById('editTaskInput').value;
     const dueDate = document.getElementById('editDueInput').value;
+    const addFormGroupId = document.getElementById("taskGroupSelectForEdit").value;
+    const newGroupName = document.getElementById("newGroupNameForEdit").value;
+
+    const payload = {
+        task: task,
+        dueDate: dueDate,
+        groupId: addFormGroupId !== "__new__" ? addFormGroupId : null,
+        newGroupName: addFormGroupId === "__new__" ? newGroupName : null
+    };
 
     fetchWithAuth(`/todos/update-ajax/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task, dueDate })
+        body: JSON.stringify(payload)
     })
-        .then(res => res.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(errorMap => {
+                    showEditValidationErrors(errorMap);
+                    throw new Error("バリデーションエラー");
+                });
+            }
+            return response.json();
+        })
         .then(updated => {
             const li = document.querySelector(`[data-id="${id}"]`).closest('li');
             li.querySelector('.task-span').textContent = updated.task;
+
+            // 期日更新
+            let formatted = '';
             if (dueDate) {
                 const dateObj = new Date(dueDate);
-                const formatted = dateObj.getFullYear() + '/' +
+                formatted = dateObj.getFullYear() + '/' +
                     String(dateObj.getMonth() + 1).padStart(2, '0') + '/' +
                     String(dateObj.getDate()).padStart(2, '0');
                 li.querySelector('.task-due').textContent = "期限: " + formatted;
+            } else {
+                li.querySelector('.task-due').textContent = "";
             }
+
+            // リスト移動処理
+            const isCompleted = li.querySelector('input[type="checkbox"]').checked;
+            const dueDateObj = dueDate ? new Date(dueDate) : null;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let targetList;
+            if (isCompleted) {
+                targetList = document.getElementById('completedTasksList');
+            } else if (!dueDateObj || dueDateObj.setHours(0, 0, 0, 0) > today.getTime()) {
+                targetList = document.getElementById('otherTasksList');
+            } else {
+                targetList = document.getElementById('todayTasksList');
+            }
+
+            // 現在のリストと異なれば移動
+            if (!targetList.contains(li)) {
+                li.remove();
+                targetList.appendChild(li);
+            }
+
+            const sortedGroupId = localStorage.getItem('sortedGroupId') ?? '';
+            const currentGroupId = addFormGroupId ?? '';
+
+            if (!addFormGroupId && todo.groupId) {
+                // 新グループが作成された場合
+                localStorage.setItem('sortedGroupId', todo.groupId);
+                document.getElementById("groupSortDropdown").textContent = todo.groupName;
+                sortByGroup(todo.groupId); // 自動で切り替え表示
+                return;
+            }
+
+            // 表示中のグループと一致しない場合は表示しない
+            if (sortedGroupId !== '' && sortedGroupId !== currentGroupId) {
+                li.remove();
+            }
+
+            todaysTaskNoneToggle();
+
             bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
         });
 });
@@ -169,25 +255,49 @@ function toggleCompleted(checkbox) {
     fetchWithAuth(`/todos/${todoId}/toggle`, {
         method: 'PATCH',
         headers: {
-            // 'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').getAttribute('content'),
             'Content-Type': 'application/json'
         }
     }).then(response => {
         if (response.ok) {
             const item = checkbox.closest('li');
-            const completedList = document.getElementById('completedTasksList');
-            const incompleteList = document.getElementById('incompleteTasksList');
+            const isCompleted = checkbox.checked;
 
-            // 移動させる（完了⇔未完了）
-            if (checkbox.checked) {
-                completedList.appendChild(item);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // 時刻を0に固定
+
+            let targetList;
+
+            if (isCompleted) {
+                // 完了 → 完了リストへ
+                targetList = document.getElementById('completedTasksList');
             } else {
-                incompleteList.appendChild(item);
+                // 未完了 → 期日によってリスト振り分け
+                const dueText = item.querySelector('.task-due')?.textContent?.trim(); // "期限: yyyy/MM/dd"
+                const match = dueText?.match(/期限:\s*(\d{4})\/(\d{2})\/(\d{2})/);
+                console.dir(match);
+                console.log(today.getTime());
+                if (match) {
+                    const dueDate = new Date(`${match[1]}-${match[2]}-${match[3]}`);
+                    dueDate.setHours(0, 0, 0, 0);
+                    if (dueDate.getTime() <= today.getTime()) {
+                        targetList = document.getElementById('todayTasksList');
+                    } else {
+                        targetList = document.getElementById('otherTasksList');
+                    }
+                } else {
+                    // 期日なし → その他へ
+                    targetList = document.getElementById('otherTasksList');
+                }
             }
 
-            const count = incompleteList.querySelectorAll('li').length;
-            const countSpan = document.getElementById("incompleteCountNumber");
-            countSpan.textContent = count;
+            // 現在のリストと異なれば移動
+            if (!targetList.contains(item)) {
+                item.remove();
+                targetList.appendChild(item);
+            }
+
+            todaysTaskNoneToggle();
+
         }
     });
 }
@@ -211,34 +321,40 @@ function sortByGroup(groupId) {
     // groupIdを保持
     localStorage.setItem('sortedGroupId', groupId);
 
-    //　未完了用
+    // 全リストを一旦クリア
+    document.getElementById('todayTasksList').innerHTML = '';
+    document.getElementById('otherTasksList').innerHTML = '';
+    document.getElementById('completedTasksList').innerHTML = '';
+
+    // 未完了タスク取得（completed=false）
     fetchWithAuth(groupId ? `/todos/group/${groupId}?completed=false` : '/todos/all?completed=false')
         .then(res => res.json())
         .then(todos => {
-            const list = document.getElementById('incompleteTasksList');
-            list.innerHTML = ''; // 一旦クリア
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
 
             todos.forEach(todo => {
                 const li = createTaskElement(todo);
-                document.getElementById("incompleteTasksList").appendChild(li);
+                const dueDate = todo.dueDate ? new Date(todo.dueDate) : null;
+                if (dueDate) dueDate.setHours(0, 0, 0, 0);
+
+                if (!dueDate || dueDate.getTime() > today.getTime()) {
+                    document.getElementById('otherTasksList').appendChild(li);
+                } else {
+                    document.getElementById('todayTasksList').appendChild(li);
+                }
             });
 
-            // 表示件数を更新
-            const count = todos.length;
-            const countSpan = document.getElementById("incompleteCountNumber");
-            countSpan.textContent = count;
+            todaysTaskNoneToggle();
         });
 
-    // 完了用
+    // 完了タスク取得（completed=true）
     fetchWithAuth(groupId ? `/todos/group/${groupId}?completed=true` : '/todos/all?completed=true')
         .then(res => res.json())
         .then(todos => {
-            const list = document.getElementById('completedTasksList');
-            list.innerHTML = ''; // 一旦クリア
-
             todos.forEach(todo => {
                 const li = createTaskElement(todo);
-                document.getElementById("completedTasksList").appendChild(li);
+                document.getElementById('completedTasksList').appendChild(li);
             });
         });
 }
@@ -292,6 +408,23 @@ document.getElementById("groupSortDropdown").addEventListener("click", function 
 
 document.getElementById('taskGroupSelect').addEventListener('focus', fetchAndUpdateGroupOptions);
 
+function todaysTaskNoneElement() {
+    const li = document.createElement("li");
+    li.className = "none-task list-group-item d-flex justify-content-between align-items-center bg-light text-dark";
+
+    const div = document.createElement("div");
+    div.className = "d-flex align-items-center gap-3";
+
+    const noneTaskSpan = document.createElement("span");
+    noneTaskSpan.className = "fs-5 task-span";
+    noneTaskSpan.textContent = "なし";
+
+    div.appendChild(noneTaskSpan);
+    li.appendChild(div);
+
+    return li;
+}
+
 // タスクのDOM要素を生成する関数
 function createTaskElement(todo) {
     const li = document.createElement("li");
@@ -327,9 +460,13 @@ function createTaskElement(todo) {
 
     if (todo.dueDate) {
         const dueDateText = document.createElement("small");
-        dueDateText.className = "text-muted";
+        dueDateText.className = "text-muted task-due";
         const due = new Date(todo.dueDate);
         dueDateText.textContent = `期限: ${due.getFullYear()}/${(due.getMonth() + 1).toString().padStart(2, '0')}/${due.getDate().toString().padStart(2, '0')}`;
+        leftDiv.appendChild(dueDateText);
+    } else {
+        const dueDateText = document.createElement("small");
+        dueDateText.className = "text-muted task-due";
         leftDiv.appendChild(dueDateText);
     }
 
@@ -381,9 +518,9 @@ function fetchAndUpdateGroupOptions() {
 
             // 最初の2つ（--グループを選択--, 新しいグループを作成）は残す
             const baseOptions = `
-          <option value="">-- グループを選択 --</option>
-          <option value="__new__">新しいグループを作成</option>
-        `;
+                <option value="">-- グループを選択 --</option>
+                <option value="__new__">新しいグループを作成</option>
+            `;
             select.innerHTML = baseOptions;
 
             // 取得したグループを追加
@@ -397,4 +534,16 @@ function fetchAndUpdateGroupOptions() {
         .catch(error => {
             console.error('グループ取得エラー:', error);
         });
+}
+
+function todaysTaskNoneToggle() {
+    // 今日の課題がなしか判定
+    if (document.getElementById('todayTasksList').children.length === 0) {
+        document.getElementById('todayTasksList').appendChild(todaysTaskNoneElement());
+    } else {
+        const noneTaskElement = document.querySelector('.none-task');
+        if (noneTaskElement) {
+            noneTaskElement.remove();
+        }
+    }
 }

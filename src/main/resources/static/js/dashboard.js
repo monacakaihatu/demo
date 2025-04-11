@@ -49,14 +49,28 @@ function updateDueStatsChart(groupId = "") {
         dueChartInstance.destroy();
       }
 
+      const labelOrder = ["今日", "明日", "2～5日後", "それ以降", "未設定"];
+      const colors = {
+        "今日": "#ff6666",
+        "明日": "#ff9999",
+        "2～5日後": "#ffcc66",
+        "それ以降": "#66b3ff",
+        "未設定": "#999999"
+      };
+
+      // 並び替え & 欠損ラベル除外
+      const sortedLabels = labelOrder.filter(label => data.hasOwnProperty(label));
+      const sortedData = sortedLabels.map(label => data[label]);
+      const backgroundColors = sortedLabels.map(label => colors[label] || "#cccccc");
+
       dueChartInstance = new Chart(ctx, {
         type: "bar",
         data: {
-          labels: Object.keys(data),
+          labels: sortedLabels,
           datasets: [{
             label: "タスク数",
-            data: Object.values(data),
-            backgroundColor: ['#ff6666', '#ff9999', '#ffcc66', '#66b3ff', '#999999'],
+            data: sortedData,
+            backgroundColor: backgroundColors
           }]
         },
         options: {
@@ -81,7 +95,6 @@ function updateDueStatsChart(groupId = "") {
       });
     });
 }
-
 
 function fetchAndUpdateChart(groupId = '') {
   const url = groupId ? `/api/stats/group/${groupId}` : '/api/stats/summary';
