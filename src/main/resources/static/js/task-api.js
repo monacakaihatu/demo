@@ -81,8 +81,6 @@ function handleAddTodo(event) {
             // 一致する場合は画面に即追加
             const li = createTaskElement(todo);
             todo.isToday === true ? document.getElementById('todayTasksList').appendChild(li) : document.getElementById('otherTasksList').appendChild(li);
-      
-            todaysTaskNoneToggle();
         })
         .catch(error => {
             console.error("エラー:", error);
@@ -330,9 +328,6 @@ function toggleCompleted(checkbox) {
             if (ul) {
                 TaskNoneElement(ul);
             }
-
-            todaysTaskNoneToggle();
-
         }
     });
 }
@@ -345,13 +340,15 @@ function sortByGroup(groupId, activeTabId = '#todayTasks') {
     document.getElementById('otherTasksList').innerHTML = '';
     document.getElementById('completedTasksList').innerHTML = '';
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     // 未完了タスク取得
     fetchWithAuth(groupId ? `/todos/group/${groupId}?completed=false` : '/todos/all?completed=false')
         .then(res => res.json())
         .then(todos => {
+            let hasToday = false;
+            let hasOther = false;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
             todos.forEach(todo => {
                 const li = createTaskElement(todo);
                 const dueDate = todo.dueDate ? new Date(todo.dueDate) : null;
@@ -359,19 +356,29 @@ function sortByGroup(groupId, activeTabId = '#todayTasks') {
 
                 if (!dueDate || dueDate.getTime() > today.getTime()) {
                     document.getElementById('otherTasksList').appendChild(li);
+                    hasOther = true;
                 } else {
                     document.getElementById('todayTasksList').appendChild(li);
+                    hasToday = true;
                 }
             });
+
+            if (!hasToday) TaskNoneElement(document.getElementById('todayTasksList'));
+            if (!hasOther) TaskNoneElement(document.getElementById('otherTasksList'));
         });
 
     // 完了タスク取得
     fetchWithAuth(groupId ? `/todos/group/${groupId}?completed=true` : '/todos/all?completed=true')
         .then(res => res.json())
         .then(todos => {
+            const list = document.getElementById('completedTasksList');
+            if (todos.length === 0) {
+                TaskNoneElement(list);
+                return;
+            }
             todos.forEach(todo => {
                 const li = createTaskElement(todo);
-                document.getElementById('completedTasksList').appendChild(li);
+                list.appendChild(li);
             });
         });
 }
