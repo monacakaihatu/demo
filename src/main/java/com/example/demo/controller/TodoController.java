@@ -1,17 +1,21 @@
 package com.example.demo.controller;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.example.demo.model.Todo;
 import com.example.demo.model.User;
@@ -72,6 +76,16 @@ public class TodoController {
         model.addAttribute("count", count);
 
         return "todo-list";
+    }
+
+    @GetMapping("/api/{id}")
+    @ResponseBody
+    public TodoDto getTodoDetail(@PathVariable Long id) {
+        Todo todo = todoService.findById(id);
+        if (todo == null)
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+
+        return new TodoDto(todo); // DTOで返却
     }
 
     @PatchMapping("/{id}/toggle")
@@ -140,6 +154,58 @@ public class TodoController {
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/update-ajax/{id}")
+    @ResponseBody
+    public ResponseEntity<?> updateTodoAjax(@PathVariable Long id, @Valid @RequestBody TodoForm form,
+            BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            Map<String, String> errors = new HashMap<>();
+            bindingResult.getFieldErrors().forEach(error -> {
+                errors.put(error.getField(), error.getDefaultMessage());
+            });
+            return ResponseEntity.badRequest().body(errors);
+        }
+
+        LocalDate dueDate = form.getDueDate();
+
+        Todo todo = todoService.findById(id);
+        if (todo == null)
+            return ResponseEntity.notFound().build();
+
+        todo.setTask(form.getTask());
+        todo.setUpdatedAt(LocalDateTime.now(ZoneId.of("Asia/Tokyo")));
+
+        if (dueDate != null) {
+            todo.setDueDate(dueDate);
+        } else {
+            todo.setDueDate(null);
+        }
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません: " + username));
+
+        // グループの処理
+        if (form.getNewGroupName() != null && !form.getNewGroupName().isBlank()) {
+            TaskGroup newGroup = new TaskGroup();
+            newGroup.setName(form.getNewGroupName());
+            newGroup.setUser(user);
+            taskGroupRepository.save(newGroup);
+            todo.setTaskGroup(newGroup);
+        } else if (form.getGroupId() != null) {
+            TaskGroup group = taskGroupRepository.findById(form.getGroupId())
+                    .orElseThrow(() -> new RuntimeException("グループが見つかりません: " + form.getGroupId()));
+            todo.setTaskGroup(group);
+        }
+        todoService.saveTodo(todo);
+
+        // debug
+        System.out.println("form：　　　" + form);
+        System.out.println("デバッグ：　　　" + todo);
+
+        return ResponseEntity.ok(todo);
+    }
+
     @DeleteMapping("/delete/{id}")
     @ResponseBody
     public ResponseEntity<?> deleteTodoAjax(@PathVariable Long id) {
@@ -192,6 +258,39 @@ public class TodoController {
         }
 
         return todos.stream().map(TodoDto::new).toList();
+    }
+
+    @GetMapping("/tab")
+    @ResponseBody
+    public Map<String, List<TodoDto>> getTodosByTab(
+            @RequestParam(required = false) Boolean completed,
+            @RequestParam(defaultValue = "all") String tab,
+            @RequestParam(required = false) Long groupId) {
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
+
+        List<Todo> todos = todoRepository.findByUserAndCompleted(user, completed);
+        LocalDate today = LocalDate.now();
+
+        List<TodoDto> filtered = todos.stream()
+                .filter(todo -> {
+                    if ("today".equals(tab)) {
+                        return !todo.isCompleted() && todo.getDueDate() != null && !todo.getDueDate().isAfter(today);
+                    } else if ("other".equals(tab)) {
+                        return !todo.isCompleted() && (todo.getDueDate() == null || todo.getDueDate().isAfter(today));
+                    } else if ("completed".equals(tab)) {
+                        return todo.isCompleted();
+                    }
+                    return true;
+                })
+                .filter(todo -> groupId == null
+                        || (todo.getTaskGroup() != null && groupId.equals(todo.getTaskGroup().getId())))
+                .map(TodoDto::new)
+                .toList();
+
+        return Map.of("todos", filtered);
     }
 
 }

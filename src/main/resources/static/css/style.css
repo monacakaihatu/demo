@@ -1,13 +1,18 @@
 /* === カラーパレット（#AA5500ベース） === */
 :root {
-  --primary-color: #AA5500;
+  --primary-color: #d16f24;
   --primary-hover: #8F4400;
   --primary-light: #FFDDB3;
   --secondary-color: #6c757d;
-  --success-color: #28a745;
+  --success-color: #0e925fdb;
   --danger-color: #dc3545;
   --background-color: #fffaf5;
   --text-color: #333;
+  --tab-link-color: #47ae98db;
+  --white-color: #ffffff;
+  --navbar-color: #998c67;
+  --navbar-hover-color: #ffe0b2;
+  --checkbox-border-color: #aa5500;
 }
 
 body {
@@ -20,7 +25,7 @@ body {
 .btn-primary {
   background-color: var(--primary-color);
   border-color: var(--primary-color);
-  color: #fff;
+  color: var(--white-color);
 }
 
 .btn-primary:hover {
@@ -36,22 +41,16 @@ body {
 .btn-outline-primary:hover {
   background-color: var(--primary-light);
   color: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 
 .btn.btn-primary:active,
-.btn.btn-primary:focus {
-  background-color: var(--primary-light) !important;
-  border-color: var(--primary-light) !important;
-  color: var(--primary-hover) !important;
-  box-shadow: none !important;
-  /* Bootstrapの影も消す */
-}
-
+.btn.btn-primary:focus,
 .btn.btn-outline-primary:active,
 .btn.btn-outline-primary:focus {
   background-color: var(--primary-light) !important;
-  color: var(--primary-hover) !important;
   border-color: var(--primary-light) !important;
+  color: var(--primary-hover) !important;
   box-shadow: none !important;
 }
 
@@ -64,98 +63,12 @@ body {
   height: 20px;
 }
 
-.real-checkbox {
-  opacity: 0;
-  width: 0;
-  height: 0;
-  position: absolute;
-}
-
-.checkmark {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 20px;
-  width: 20px;
-  background-color: #fff;
-  border: 2px solid var(--primary-color);
-  border-radius: 4px;
-  transition: all 0.2s ease;
-}
-
-.real-checkbox:checked+.checkmark {
-  background-color: var(--primary-color);
-}
-
-.checkmark::after {
-  content: "";
-  position: absolute;
-  display: none;
-  left: 6px;
-  top: 2px;
-  width: 5px;
-  height: 10px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-.real-checkbox:checked+.checkmark::after {
-  display: block;
-}
-
-/* === カードなど === */
-.card {
-  border: 1px solid var(--primary-light);
-  background-color: #fff;
-}
-
-/* === フォームコントロール === */
-.form-control:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 0.2rem rgba(170, 85, 0, 0.25);
-}
-
-/* === 見出し === */
-h1,
-h2,
-h3,
-h4,
-h5 {
-  color: var(--primary-color);
-}
-
-/* === navigation === */
-.custom-navbar {
-  background-color: #aa5500;
-}
-
-.custom-navbar .navbar-brand,
-.custom-navbar .nav-link,
-.custom-navbar .navbar-text {
-  color: white;
-}
-
-.custom-navbar .nav-link:hover {
-  color: #ffe0b2;
-  /* 明るめオレンジ */
-}
-
-
-.custom-checkbox {
-  display: inline-block;
-  position: relative;
-  cursor: pointer;
-  width: 20px;
-  height: 20px;
-}
-
 .custom-checkbox input[type="checkbox"] {
   opacity: 0;
-  /* これで元のチェックを非表示 */
   width: 0;
   height: 0;
   position: absolute;
+  margin-right: 6px;
 }
 
 .custom-checkbox .checkmark {
@@ -164,14 +77,14 @@ h5 {
   left: 0;
   height: 20px;
   width: 20px;
-  background-color: #fff;
-  border: 2px solid #AA5500;
+  background-color: var(--white-color);
+  border: 2px solid var(--checkbox-border-color);
   border-radius: 4px;
   transition: all 0.2s ease;
 }
 
-.custom-checkbox input[type="checkbox"]:checked+.checkmark {
-  background-color: #AA5500;
+.custom-checkbox input[type="checkbox"]:checked + .checkmark {
+  background-color: var(--checkbox-border-color);
 }
 
 .custom-checkbox .checkmark::after {
@@ -182,15 +95,86 @@ h5 {
   top: 2px;
   width: 5px;
   height: 10px;
-  border: solid white;
+  border: solid var(--white-color);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
 
-.custom-checkbox input[type="checkbox"]:checked+.checkmark::after {
+.custom-checkbox input[type="checkbox"]:checked + .checkmark::after {
   display: block;
 }
 
+/* === カードなど === */
+.card {
+  border: 1px solid var(--primary-light);
+  background-color: var(--white-color);
+}
+
+/* === フォーム === */
+.form-control:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(170, 85, 0, 0.25);
+}
+
+/* === 見出し === */
+h1, h2, h3, h4, h5 {
+  color: var(--primary-color);
+}
+
+/* === ナビゲーションバー === */
+.custom-navbar {
+  background-color: var(--navbar-color);
+}
+
+.custom-navbar .navbar-brand,
+.custom-navbar .nav-link,
+.custom-navbar .navbar-text {
+  color: var(--white-color);
+}
+
+.custom-navbar .nav-link:hover {
+  color: var(--navbar-hover-color);
+}
+
+/* === タブ & タスク追加ボタン === */
+.nav-tabs {
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.nav-tabs .nav-link {
+  color: var(--success-color);
+  font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.nav-tabs .nav-link.active {
+  color: var(--danger-color);
+  border-bottom: 3px solid var(--primary-color);
+  background-color: transparent;
+}
+
+.tab-content {
+  background-color: transparent;
+  padding: 1.5rem;
+}
+
+.add-task-btn {
+  background-color: var(--success-color);
+  font-weight: 300;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.add-task-btn:hover {
+  background-color: var(--tab-link-color);
+}
+
+/* === タイトル・補助UI === */
 .top-title {
   position: relative;
   display: inline-block;
@@ -207,14 +191,37 @@ h5 {
   word-break: break-word;
 }
 
-.custom-checkbox input[type="checkbox"] {
-  margin-right: 6px;
-}
-
 #newGroupInputContainer {
   transition: all 0.3s ease;
 }
 
-.custom-navbar {
-  background-color: #a35b00;
+/* タスクリストのアイテム */
+.list-group-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-link.dropdown-toggle::after {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .tab-content {
+    background-color: transparent;
+    padding: 0.5rem 0
+  }
+
+  .list-group-item .d-flex.align-items-center {
+    flex-direction: row
+  }
+
+  .list-group-item .task-due {
+    margin-top: 5px;
+  }
+
+  .list-group-item .task-span {
+    margin-bottom: 5px;
+  }
 }
