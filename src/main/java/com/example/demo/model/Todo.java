@@ -1,7 +1,10 @@
 package com.example.demo.model;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+
+import org.springframework.format.annotation.DateTimeFormat;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
@@ -24,6 +27,10 @@ public class Todo {
     private String task;
     private boolean completed;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    @Column(name = "due_date")
+    private LocalDate dueDate;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     @JsonBackReference
@@ -32,7 +39,7 @@ public class Todo {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id")
     private TaskGroup taskGroup;
-    
+
     private LocalDateTime createdAt = LocalDateTime.now(ZoneId.of("Asia/Tokyo"));
     private LocalDateTime updatedAt = LocalDateTime.now(ZoneId.of("Asia/Tokyo"));
 }

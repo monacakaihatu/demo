@@ -17,14 +17,9 @@ document.getElementById('taskGroupSelect').addEventListener('change', function (
     newGroupInput.style.display = this.value === '__new__' ? 'block' : 'none';
 });
 
-// タスクグループ追加
-document.getElementById("taskGroupSelect").addEventListener("change", function () {
-    const newGroupInput = document.getElementById("newGroupInputContainer");
-    if (this.value === "__new__") {
-        newGroupInput.style.display = "block";
-    } else {
-        newGroupInput.style.display = "none";
-    }
+document.getElementById('taskGroupSelectForEdit').addEventListener('change', function () {
+    const newGroupInput = document.getElementById('newGroupInputContainerForEdit');
+    newGroupInput.style.display = this.value === '__new__' ? 'block' : 'none';
 });
 
 // タスク追加
@@ -35,9 +30,11 @@ function handleAddTodo(event) {
     const task = document.querySelector('input[name="task"]').value;
     const addFormGroupId = document.getElementById("taskGroupSelect").value;
     const newGroupName = document.getElementById("newGroupName").value;
+    const dueDate = document.getElementById("dueDate").value;
 
     const payload = {
         task: task,
+        dueDate: dueDate,
         groupId: addFormGroupId !== "__new__" ? addFormGroupId : null,
         newGroupName: addFormGroupId === "__new__" ? newGroupName : null
     };
@@ -57,13 +54,13 @@ function handleAddTodo(event) {
             return response.json();
         })
         .then(todo => {
-            const modal = bootstrap.Modal.getInstance(document.getElementById('addTaskModal'));
-            modal.hide();
+            bootstrap.Modal.getInstance(document.getElementById('addTaskModal')).hide();
 
             // フォームリセット
             document.querySelector('input[name="task"]').value = "";
             document.getElementById("newGroupName").value = "";
             document.getElementById("taskGroupSelect").value = "";
+            document.getElementById("dueDate").value = "";
 
             const sortedGroupId = localStorage.getItem('sortedGroupId') ?? '';
             const currentGroupId = addFormGroupId ?? '';
@@ -84,6 +81,8 @@ function handleAddTodo(event) {
             // 一致する場合は画面に即追加
             const li = createTaskElement(todo);
             todo.isToday === true ? document.getElementById('todayTasksList').appendChild(li) : document.getElementById('otherTasksList').appendChild(li);
+      
+            todaysTaskNoneToggle();
         })
         .catch(error => {
             console.error("エラー:", error);
@@ -121,38 +120,89 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
             // モーダル閉じる
             bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal')).hide();
             document.querySelector('input[name="task"]').focus();
-
-            updateIncompleteCount(); // 件数カウントを更新
         }
     });
 });
 
-
 // タスク編集
 function openEditModalFromButton(button) {
     const id = button.getAttribute('data-id');
-    const task = button.getAttribute('data-task');
-    openEditModal(id, task);
+
+    // タスク情報をAPIから取得
+    fetchWithAuth(`/todos/api/${id}`)
+        .then(res => res.json())
+        .then(todo => {
+            const task = todo.task;
+            const dueDate = todo.dueDate ? new Date(todo.dueDate) : null;
+            const groupId = todo.taskGroup?.id ?? "";
+            const groupName = todo.taskGroup?.name ?? "";
+
+            let dueFormatted = "";
+            if (dueDate) {
+                dueFormatted = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}-${String(dueDate.getDate()).padStart(2, '0')}`;
+            }
+
+            openEditModal(id, task, dueFormatted, groupId, groupName);
+        })
+        .catch(err => {
+            console.error("タスク情報の取得に失敗しました", err);
+            alert("タスク情報の取得に失敗しました");
+        });
 }
 
-function openEditModal(id, currentTask) {
+function openEditModal(id, currentTask, due = "", groupId = "", groupName = "") {
     const input = document.getElementById('editTaskInput');
+    const dueInput = document.getElementById('editDueInput');
+    const groupInput = document.getElementById('taskGroupSelectForEdit');
     const saveBtn = document.getElementById('saveEditBtn');
     input.value = currentTask;
+    dueInput.value = due;
+    if (groupInput) {
+        // optionがなければ追加
+        if (![...groupInput.options].some(opt => opt.value === String(groupId))) {
+            const option = document.createElement("option");
+            option.value = groupId;
+            option.textContent = groupName;
+            groupInput.appendChild(option);
+        }
+
+        groupInput.value = groupId;
+    }
     saveBtn.setAttribute('data-id', id);
+
     new bootstrap.Modal(document.getElementById('editModal')).show();
 }
 
 document.getElementById('saveEditBtn').addEventListener('click', () => {
+    clearEditErrors();
+
     const id = event.target.getAttribute('data-id');
     const task = document.getElementById('editTaskInput').value;
+    const dueDate = document.getElementById('editDueInput').value;
+    const addFormGroupId = document.getElementById("taskGroupSelectForEdit").value;
+    const newGroupName = document.getElementById("newGroupNameForEdit").value;
+
+    const payload = {
+        task: task,
+        dueDate: dueDate,
+        groupId: addFormGroupId !== "__new__" ? addFormGroupId : null,
+        newGroupName: addFormGroupId === "__new__" ? newGroupName : null
+    };
 
     fetchWithAuth(`/todos/update-ajax/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task })
+        body: JSON.stringify(payload)
     })
-        .then(res => res.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(errorMap => {
+                    showEditValidationErrors(errorMap);
+                    throw new Error("バリデーションエラー");
+                });
+            }
+            return response.json();
+        })
         .then(updated => {
             const li = document.querySelector(`[data-id="${id}"]`).closest('li');
             li.querySelector('.task-span').textContent = updated.task;
@@ -198,6 +248,7 @@ document.getElementById('saveEditBtn').addEventListener('click', () => {
                 localStorage.setItem('sortedGroupId', updated.groupId);
                 document.getElementById("groupSortDropdown").textContent = updated.groupName;
                 sortByGroup(updated.groupId); // 自動で切り替え表示
+
                 return;
             }
 
@@ -235,18 +286,21 @@ function toggleCompleted(checkbox) {
     fetchWithAuth(`/todos/${todoId}/toggle`, {
         method: 'PATCH',
         headers: {
-            // 'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').getAttribute('content'),
             'Content-Type': 'application/json'
         }
     }).then(response => {
         if (response.ok) {
             const item = checkbox.closest('li');
-            const completedList = document.getElementById('completedTasksList');
-            const incompleteList = document.getElementById('incompleteTasksList');
+            const isCompleted = checkbox.checked;
 
-            // 移動させる（完了⇔未完了）
-            if (checkbox.checked) {
-                completedList.appendChild(item);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // 時刻を0に固定
+
+            let targetList;
+
+            if (isCompleted) {
+                // 完了 → 完了リストへ
+                targetList = document.getElementById('completedTasksList');
             } else {
                 // 未完了 → 期日によってリスト振り分け
                 const dueText = item.querySelector('.task-due')?.textContent?.trim(); // "期限: yyyy/MM/dd"
@@ -276,6 +330,9 @@ function toggleCompleted(checkbox) {
             if (ul) {
                 TaskNoneElement(ul);
             }
+
+            todaysTaskNoneToggle();
+
         }
     });
 }
@@ -284,8 +341,6 @@ function toggleCompleted(checkbox) {
 // グループでソートされたタスクを表示
 function sortByGroup(groupId, activeTabId = '#todayTasks') {
     localStorage.setItem('sortedGroupId', groupId);
-
-    // 全部のリストを一旦クリア
     document.getElementById('todayTasksList').innerHTML = '';
     document.getElementById('otherTasksList').innerHTML = '';
     document.getElementById('completedTasksList').innerHTML = '';
@@ -299,7 +354,14 @@ function sortByGroup(groupId, activeTabId = '#todayTasks') {
         .then(todos => {
             todos.forEach(todo => {
                 const li = createTaskElement(todo);
-                document.getElementById("incompleteTasksList").appendChild(li);
+                const dueDate = todo.dueDate ? new Date(todo.dueDate) : null;
+                if (dueDate) dueDate.setHours(0, 0, 0, 0);
+
+                if (!dueDate || dueDate.getTime() > today.getTime()) {
+                    document.getElementById('otherTasksList').appendChild(li);
+                } else {
+                    document.getElementById('todayTasksList').appendChild(li);
+                }
             });
         });
 
@@ -307,12 +369,9 @@ function sortByGroup(groupId, activeTabId = '#todayTasks') {
     fetchWithAuth(groupId ? `/todos/group/${groupId}?completed=true` : '/todos/all?completed=true')
         .then(res => res.json())
         .then(todos => {
-            const list = document.getElementById('completedTasksList');
-            list.innerHTML = ''; // 一旦クリア
-
             todos.forEach(todo => {
                 const li = createTaskElement(todo);
-                document.getElementById("completedTasksList").appendChild(li);
+                document.getElementById('completedTasksList').appendChild(li);
             });
         });
 }
@@ -513,9 +572,9 @@ function fetchAndUpdateGroupOptions() {
 
             // 最初の2つ（--グループを選択--, 新しいグループを作成）は残す
             const baseOptions = `
-          <option value="">-- グループを選択 --</option>
-          <option value="__new__">新しいグループを作成</option>
-        `;
+                <option value="">-- グループを選択 --</option>
+                <option value="__new__">新しいグループを作成</option>
+            `;
             select.innerHTML = baseOptions;
 
             // 取得したグループを追加

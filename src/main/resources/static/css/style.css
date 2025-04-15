@@ -225,3 +225,7 @@ h1, h2, h3, h4, h5 {
     margin-bottom: 5px;
   }
 }
+
+.custom-navbar {
+  background-color: #a35b00;
+}

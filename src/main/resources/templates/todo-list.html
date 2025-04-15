@@ -167,6 +167,10 @@
               <input type="text" name="task" class="form-control" placeholder="タスク名" required>
             </div>
             <div class="mb-3">
+              <label for="dueDate">期日</label>
+              <input type="date" id="dueDate" name="dueDate" class="form-control" />
+            </div>
+            <div class="mb-3">
               <label for="taskGroupSelect" class="form-label">タスクグループ</label>
               <select id="taskGroupSelect" class="form-select">
                 <option value="">-- グループを選択 --</option>
@@ -248,13 +252,7 @@
     <script th:src="@{/js/task-api.js}"></script>
     <script th:src="@{/js/group-edit.js}"></script>
     <script th:src="@{/js/form-validation.js}"></script>
-    <script>
-      // 新しいグループ選択時の表示制御
-      document.getElementById('taskGroupSelect').addEventListener('change', function () {
-        const newGroupInput = document.getElementById('newGroupInputContainer');
-        newGroupInput.style.display = this.value === '__new__' ? 'block' : 'none';
-      });
-    </script>
+
   </div>
 </body>
 
