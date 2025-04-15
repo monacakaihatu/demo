@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -223,65 +224,6 @@ public class TodoController {
         System.out.println("form：　　　" + form);
         System.out.println("デバッグ：　　　" + todo);
 
-        return ResponseEntity.ok(todo);
-    }
-
-    @DeleteMapping("/delete/{id}")
-    @ResponseBody
-    public ResponseEntity<?> deleteTodoAjax(@PathVariable Long id) {
-        todoService.deleteTodo(id);
-        return ResponseEntity.ok().build();
-    }
-
-    @PutMapping("/update-ajax/{id}")
-    @ResponseBody
-    public ResponseEntity<?> updateTodoAjax(@PathVariable Long id, @Valid @RequestBody TodoForm form,
-            BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            Map<String, String> errors = new HashMap<>();
-            bindingResult.getFieldErrors().forEach(error -> {
-                errors.put(error.getField(), error.getDefaultMessage());
-            });
-            return ResponseEntity.badRequest().body(errors);
-        }
-
-        LocalDate dueDate = form.getDueDate();
-
-        Todo todo = todoService.findById(id);
-        if (todo == null)
-            return ResponseEntity.notFound().build();
-
-        todo.setTask(form.getTask());
-        todo.setUpdatedAt(LocalDateTime.now(ZoneId.of("Asia/Tokyo")));
-
-        if (dueDate != null) {
-            todo.setDueDate(dueDate);
-        } else {
-            todo.setDueDate(null);
-        }
-
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません: " + username));
-
-        // グループの処理
-        if (form.getNewGroupName() != null && !form.getNewGroupName().isBlank()) {
-            TaskGroup newGroup = new TaskGroup();
-            newGroup.setName(form.getNewGroupName());
-            newGroup.setUser(user);
-            taskGroupRepository.save(newGroup);
-            todo.setTaskGroup(newGroup);
-        } else if (form.getGroupId() != null) {
-            TaskGroup group = taskGroupRepository.findById(form.getGroupId())
-                    .orElseThrow(() -> new RuntimeException("グループが見つかりません: " + form.getGroupId()));
-            todo.setTaskGroup(group);
-        }
-        todoService.saveTodo(todo);
-        
-        // debug 
-        System.out.println("form：　　　" + form);
-        System.out.println("デバッグ：　　　" + todo);
-        
         return ResponseEntity.ok(todo);
     }
 
